@@ -7,14 +7,12 @@ POST /api/recommendations
 from fastapi import APIRouter
 
 from app.models import (
-    ProblemRecommendation,
     RecommendationRequest,
     RecommendationResponse,
 )
 from app.services.recommendation_service import (
-    PROBLEM_BANK,
     build_plan_note,
-    calculate_match_score,
+    get_ranked_recommendations,
 )
 
 
@@ -34,25 +32,12 @@ def get_recommendations(
     Later, this endpoint will use saved profile, timetable,
     daily overrides, and revision history automatically.
     """
-    ranked_problems: list[ProblemRecommendation] = []
-
-    for problem in PROBLEM_BANK:
-        score = calculate_match_score(
-            problem=problem,
-            workload=request.workload,
-            situation=request.situation,
-            weak_concept=request.weak_concept,
-            goal=request.goal,
-        )
-
-        ranked_problems.append(
-            ProblemRecommendation(
-                **problem,
-                match_score=score,
-            )
-        )
-
-    ranked_problems.sort(key=lambda p: p.match_score, reverse=True)
+    ranked_problems = get_ranked_recommendations(
+        workload=request.workload,
+        situation=request.situation,
+        weak_concept=request.weak_concept,
+        goal=request.goal,
+    )
 
     return RecommendationResponse(
         student_context=request,

@@ -9,6 +9,7 @@ from fastapi import FastAPI
 
 from app.routers import (
     daily_overrides,
+    daily_plans,
     general,
     profiles,
     recommendations,
@@ -21,7 +22,7 @@ def create_app() -> FastAPI:
     application = FastAPI(
         title="AlgoMentor AI API",
         description="Backend API for the AlgoMentor AI DSA revision coach.",
-        version="0.4.0",
+        version="0.5.0",
     )
 
     application.include_router(general.router)
@@ -29,6 +30,7 @@ def create_app() -> FastAPI:
     application.include_router(schedules.router)
     application.include_router(daily_overrides.router)
     application.include_router(recommendations.router)
+    application.include_router(daily_plans.router)
 
     return application
 
