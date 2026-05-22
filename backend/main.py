@@ -1,19 +1,19 @@
 from typing import Literal
 
-from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
 
 app = FastAPI(
     title="AlgoMentor AI API",
     description="Backend API for the AlgoMentor AI DSA revision coach.",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 
-# -----------------------------
-# Request and response models
-# -----------------------------
+# ============================================================
+# Shared types
+# ============================================================
 
 Workload = Literal["Low", "Medium", "High"]
 
@@ -43,6 +43,162 @@ Goal = Literal[
     "Competitive Programming",
 ]
 
+StudyTime = Literal["Morning", "Afternoon", "Evening", "Night"]
+
+DayName = Literal[
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+]
+
+
+# ============================================================
+# Student Profile Models
+# ============================================================
+
+class StudentProfile(BaseModel):
+    name: str = Field(min_length=2, max_length=60)
+    goal: Goal = "Placement Prep"
+    current_topic: str = Field(default="Hashing", min_length=2, max_length=50)
+    completed_topics: list[str] = Field(default_factory=lambda: ["Arrays"])
+    weak_concepts: list[str] = Field(default_factory=lambda: ["Prefix Sum"])
+    preferred_study_time: StudyTime = "Evening"
+    minimum_daily_minutes: int = Field(default=20, ge=10, le=240)
+    maximum_daily_minutes: int = Field(default=120, ge=20, le=480)
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "name": "Vernit",
+                    "goal": "Placement Prep",
+                    "current_topic": "Hashing",
+                    "completed_topics": ["Arrays"],
+                    "weak_concepts": ["Prefix Sum"],
+                    "preferred_study_time": "Evening",
+                    "minimum_daily_minutes": 20,
+                    "maximum_daily_minutes": 120,
+                }
+            ]
+        }
+    }
+
+
+class StudentProfileResponse(BaseModel):
+    user_id: str
+    profile: StudentProfile
+    message: str
+
+
+# ============================================================
+# Weekly Schedule Models
+# ============================================================
+
+class ClassSlot(BaseModel):
+    title: str = Field(default="College Classes", min_length=2, max_length=80)
+    start_time: str = Field(pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    end_time: str = Field(pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+
+
+class DaySchedule(BaseModel):
+    day: DayName
+    is_free_day: bool = False
+    classes: list[ClassSlot] = Field(default_factory=list)
+
+
+class WeeklySchedule(BaseModel):
+    days: list[DaySchedule] = Field(min_length=7, max_length=7)
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "days": [
+                        {
+                            "day": "Monday",
+                            "is_free_day": False,
+                            "classes": [
+                                {
+                                    "title": "College Classes",
+                                    "start_time": "09:00",
+                                    "end_time": "16:00",
+                                }
+                            ],
+                        },
+                        {
+                            "day": "Tuesday",
+                            "is_free_day": False,
+                            "classes": [
+                                {
+                                    "title": "College Classes",
+                                    "start_time": "09:00",
+                                    "end_time": "13:00",
+                                }
+                            ],
+                        },
+                        {
+                            "day": "Wednesday",
+                            "is_free_day": False,
+                            "classes": [
+                                {
+                                    "title": "College Classes",
+                                    "start_time": "09:00",
+                                    "end_time": "16:00",
+                                }
+                            ],
+                        },
+                        {
+                            "day": "Thursday",
+                            "is_free_day": False,
+                            "classes": [
+                                {
+                                    "title": "College Classes",
+                                    "start_time": "10:00",
+                                    "end_time": "15:00",
+                                }
+                            ],
+                        },
+                        {
+                            "day": "Friday",
+                            "is_free_day": False,
+                            "classes": [
+                                {
+                                    "title": "College Classes",
+                                    "start_time": "09:00",
+                                    "end_time": "14:00",
+                                }
+                            ],
+                        },
+                        {
+                            "day": "Saturday",
+                            "is_free_day": True,
+                            "classes": [],
+                        },
+                        {
+                            "day": "Sunday",
+                            "is_free_day": True,
+                            "classes": [],
+                        },
+                    ]
+                }
+            ]
+        }
+    }
+
+
+class WeeklyScheduleResponse(BaseModel):
+    user_id: str
+    schedule: WeeklySchedule
+    message: str
+
+
+# ============================================================
+# Recommendation Models
+# ============================================================
 
 class RecommendationRequest(BaseModel):
     workload: Workload = "Medium"
@@ -80,10 +236,19 @@ class RecommendationResponse(BaseModel):
     plan_note: str
 
 
-# -----------------------------
-# Temporary problem bank
-# Later this will come from DB
-# -----------------------------
+# ============================================================
+# Temporary In-Memory Storage
+# Later this will be replaced by Supabase
+# ============================================================
+
+PROFILE_STORE: dict[str, StudentProfile] = {}
+SCHEDULE_STORE: dict[str, WeeklySchedule] = {}
+
+
+# ============================================================
+# Temporary Problem Bank
+# Later this will come from Supabase
+# ============================================================
 
 PROBLEM_BANK = [
     {
@@ -122,9 +287,9 @@ PROBLEM_BANK = [
 ]
 
 
-# -----------------------------
-# Recommendation logic
-# -----------------------------
+# ============================================================
+# Recommendation Logic
+# ============================================================
 
 def calculate_match_score(
     problem: dict,
@@ -136,27 +301,22 @@ def calculate_match_score(
     """
     Calculate an explainable problem recommendation score.
 
-    This follows the same prototype scoring idea currently shown
-    in the React dashboard. Later, database history and SM-2
-    revision priority will be added here.
+    Later, actual revision history and SM-2 priority will also
+    be included in this score.
     """
     score = 62
     tags = problem["tags"]
     difficulty = problem["difficulty"]
 
-    # Current learning journey:
-    # Arrays revision is due while the student is learning Hashing.
     if "Hashing" in tags:
         score += 12
 
     if "Array" in tags:
         score += 10
 
-    # Reinforce the learner's selected weak concept.
     if weak_concept in tags:
         score += 16
 
-    # Goal-based adjustment.
     if goal == "Placement Prep":
         if "Hashing" in tags:
             score += 6
@@ -179,7 +339,6 @@ def calculate_match_score(
         if difficulty in {"Easy", "Medium"}:
             score += 5
 
-    # Workload and daily-life adjustment.
     if workload == "High" or situation == "Internal exam / Test":
         if difficulty == "Easy":
             score += 8
@@ -213,9 +372,9 @@ def build_plan_note(workload: Workload, situation: Situation) -> str:
     return "Balanced day: combining revision with current-topic practice."
 
 
-# -----------------------------
-# API endpoints
-# -----------------------------
+# ============================================================
+# General API Endpoints
+# ============================================================
 
 @app.get("/")
 def read_root() -> dict[str, str]:
@@ -229,15 +388,139 @@ def health_check() -> dict[str, str]:
     return {"status": "healthy"}
 
 
-@app.post("/api/recommendations", response_model=RecommendationResponse)
+# ============================================================
+# Student Profile Endpoints
+# ============================================================
+
+@app.put(
+    "/api/users/{user_id}/profile",
+    response_model=StudentProfileResponse,
+)
+def save_student_profile(
+    user_id: str,
+    profile: StudentProfile,
+) -> StudentProfileResponse:
+    """
+    Save or update the student's long-term learning profile.
+
+    This data is entered during onboarding and only changed
+    later from profile/settings.
+    """
+    if profile.maximum_daily_minutes < profile.minimum_daily_minutes:
+        raise HTTPException(
+            status_code=400,
+            detail="Maximum daily minutes must be greater than or equal to minimum daily minutes.",
+        )
+
+    PROFILE_STORE[user_id] = profile
+
+    return StudentProfileResponse(
+        user_id=user_id,
+        profile=profile,
+        message="Student profile saved successfully.",
+    )
+
+
+@app.get(
+    "/api/users/{user_id}/profile",
+    response_model=StudentProfileResponse,
+)
+def get_student_profile(user_id: str) -> StudentProfileResponse:
+    """Retrieve a saved student profile."""
+    profile = PROFILE_STORE.get(user_id)
+
+    if profile is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Student profile not found.",
+        )
+
+    return StudentProfileResponse(
+        user_id=user_id,
+        profile=profile,
+        message="Student profile retrieved successfully.",
+    )
+
+
+# ============================================================
+# Weekly Schedule Endpoints
+# ============================================================
+
+@app.put(
+    "/api/users/{user_id}/weekly-schedule",
+    response_model=WeeklyScheduleResponse,
+)
+def save_weekly_schedule(
+    user_id: str,
+    schedule: WeeklySchedule,
+) -> WeeklyScheduleResponse:
+    """
+    Save or update the student's regular weekly college timetable.
+
+    The timetable is entered once and reused every day until
+    the student updates it.
+    """
+    submitted_days = [day.day for day in schedule.days]
+
+    if len(set(submitted_days)) != 7:
+        raise HTTPException(
+            status_code=400,
+            detail="Weekly schedule must contain each weekday exactly once.",
+        )
+
+    for day_schedule in schedule.days:
+        if day_schedule.is_free_day and day_schedule.classes:
+            raise HTTPException(
+                status_code=400,
+                detail=f"{day_schedule.day} cannot be a free day and contain classes.",
+            )
+
+    SCHEDULE_STORE[user_id] = schedule
+
+    return WeeklyScheduleResponse(
+        user_id=user_id,
+        schedule=schedule,
+        message="Weekly schedule saved successfully.",
+    )
+
+
+@app.get(
+    "/api/users/{user_id}/weekly-schedule",
+    response_model=WeeklyScheduleResponse,
+)
+def get_weekly_schedule(user_id: str) -> WeeklyScheduleResponse:
+    """Retrieve a saved weekly timetable."""
+    schedule = SCHEDULE_STORE.get(user_id)
+
+    if schedule is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Weekly schedule not found.",
+        )
+
+    return WeeklyScheduleResponse(
+        user_id=user_id,
+        schedule=schedule,
+        message="Weekly schedule retrieved successfully.",
+    )
+
+
+# ============================================================
+# Recommendation Endpoint
+# ============================================================
+
+@app.post(
+    "/api/recommendations",
+    response_model=RecommendationResponse,
+)
 def get_recommendations(
     request: RecommendationRequest,
 ) -> RecommendationResponse:
     """
     Rank practice problems according to the student's daily context.
 
-    The React frontend can later send its dropdown selections here
-    instead of calculating recommendation scores locally.
+    Later, this endpoint will use saved profile, timetable,
+    daily overrides, and revision history automatically.
     """
     ranked_problems = []
 
