@@ -1,3 +1,4 @@
+from datetime import date as Date
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException
@@ -7,12 +8,12 @@ from pydantic import BaseModel, Field
 app = FastAPI(
     title="AlgoMentor AI API",
     description="Backend API for the AlgoMentor AI DSA revision coach.",
-    version="0.3.0",
+    version="0.4.0",
 )
 
 
 # ============================================================
-# Shared types
+# Shared Types
 # ============================================================
 
 Workload = Literal["Low", "Medium", "High"]
@@ -25,6 +26,8 @@ Situation = Literal[
     "Event / Hackathon",
     "Free day",
 ]
+
+EnergyLevel = Literal["Low", "Normal", "High"]
 
 WeakConcept = Literal[
     "Prefix Sum",
@@ -197,6 +200,51 @@ class WeeklyScheduleResponse(BaseModel):
 
 
 # ============================================================
+# Daily Override / Quick Check-in Models
+# ============================================================
+
+class DailyOverride(BaseModel):
+    situation: Situation = "Normal day"
+    extra_available_minutes: int = Field(
+        default=0,
+        ge=-240,
+        le=480,
+        description=(
+            "Temporary change in available DSA time for this date. "
+            "Positive adds time; negative reduces time."
+        ),
+    )
+    energy_level: EnergyLevel = "Normal"
+    note: str | None = Field(default=None, max_length=200)
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "situation": "Internal exam / Test",
+                    "extra_available_minutes": 0,
+                    "energy_level": "Low",
+                    "note": "Physics internal exam today",
+                }
+            ]
+        }
+    }
+
+
+class DailyOverrideResponse(BaseModel):
+    user_id: str
+    date: Date
+    override: DailyOverride
+    message: str
+
+
+class DailyOverrideDeleteResponse(BaseModel):
+    user_id: str
+    date: Date
+    message: str
+
+
+# ============================================================
 # Recommendation Models
 # ============================================================
 
@@ -243,6 +291,7 @@ class RecommendationResponse(BaseModel):
 
 PROFILE_STORE: dict[str, StudentProfile] = {}
 SCHEDULE_STORE: dict[str, WeeklySchedule] = {}
+DAILY_OVERRIDE_STORE: dict[tuple[str, Date], DailyOverride] = {}
 
 
 # ============================================================
@@ -285,6 +334,36 @@ PROBLEM_BANK = [
         "leetcode_link": "https://leetcode.com/problems/subarray-sum-equals-k/",
     },
 ]
+
+
+# ============================================================
+# Helper Functions
+# ============================================================
+
+def require_profile(user_id: str) -> StudentProfile:
+    """Return saved profile or raise a clear not-found error."""
+    profile = PROFILE_STORE.get(user_id)
+
+    if profile is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Student profile not found. Complete onboarding first.",
+        )
+
+    return profile
+
+
+def require_schedule(user_id: str) -> WeeklySchedule:
+    """Return saved weekly schedule or raise a clear not-found error."""
+    schedule = SCHEDULE_STORE.get(user_id)
+
+    if schedule is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Weekly schedule not found. Save regular timetable first.",
+        )
+
+    return schedule
 
 
 # ============================================================
@@ -409,7 +488,10 @@ def save_student_profile(
     if profile.maximum_daily_minutes < profile.minimum_daily_minutes:
         raise HTTPException(
             status_code=400,
-            detail="Maximum daily minutes must be greater than or equal to minimum daily minutes.",
+            detail=(
+                "Maximum daily minutes must be greater than or equal "
+                "to minimum daily minutes."
+            ),
         )
 
     PROFILE_STORE[user_id] = profile
@@ -427,13 +509,7 @@ def save_student_profile(
 )
 def get_student_profile(user_id: str) -> StudentProfileResponse:
     """Retrieve a saved student profile."""
-    profile = PROFILE_STORE.get(user_id)
-
-    if profile is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Student profile not found.",
-        )
+    profile = require_profile(user_id)
 
     return StudentProfileResponse(
         user_id=user_id,
@@ -472,7 +548,10 @@ def save_weekly_schedule(
         if day_schedule.is_free_day and day_schedule.classes:
             raise HTTPException(
                 status_code=400,
-                detail=f"{day_schedule.day} cannot be a free day and contain classes.",
+                detail=(
+                    f"{day_schedule.day} cannot be a free day "
+                    "and contain classes."
+                ),
             )
 
     SCHEDULE_STORE[user_id] = schedule
@@ -490,18 +569,104 @@ def save_weekly_schedule(
 )
 def get_weekly_schedule(user_id: str) -> WeeklyScheduleResponse:
     """Retrieve a saved weekly timetable."""
-    schedule = SCHEDULE_STORE.get(user_id)
-
-    if schedule is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Weekly schedule not found.",
-        )
+    schedule = require_schedule(user_id)
 
     return WeeklyScheduleResponse(
         user_id=user_id,
         schedule=schedule,
         message="Weekly schedule retrieved successfully.",
+    )
+
+
+# ============================================================
+# Daily Override / Quick Check-in Endpoints
+# ============================================================
+
+@app.put(
+    "/api/users/{user_id}/daily-overrides/{override_date}",
+    response_model=DailyOverrideResponse,
+)
+def save_daily_override(
+    user_id: str,
+    override_date: Date,
+    override: DailyOverride,
+) -> DailyOverrideResponse:
+    """
+    Save a one-day exception to the student's normal weekly timetable.
+
+    Examples:
+    - Internal exam today
+    - Assignment workload today
+    - Unexpected free day
+    - Extra or reduced available study time
+    - Low/high energy today
+
+    This does not modify the regular weekly timetable.
+    """
+    require_profile(user_id)
+    require_schedule(user_id)
+
+    DAILY_OVERRIDE_STORE[(user_id, override_date)] = override
+
+    return DailyOverrideResponse(
+        user_id=user_id,
+        date=override_date,
+        override=override,
+        message="Daily override saved successfully. Regular timetable unchanged.",
+    )
+
+
+@app.get(
+    "/api/users/{user_id}/daily-overrides/{override_date}",
+    response_model=DailyOverrideResponse,
+)
+def get_daily_override(
+    user_id: str,
+    override_date: Date,
+) -> DailyOverrideResponse:
+    """Retrieve a saved one-day schedule/check-in override."""
+    override = DAILY_OVERRIDE_STORE.get((user_id, override_date))
+
+    if override is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No daily override found for this date.",
+        )
+
+    return DailyOverrideResponse(
+        user_id=user_id,
+        date=override_date,
+        override=override,
+        message="Daily override retrieved successfully.",
+    )
+
+
+@app.delete(
+    "/api/users/{user_id}/daily-overrides/{override_date}",
+    response_model=DailyOverrideDeleteResponse,
+)
+def delete_daily_override(
+    user_id: str,
+    override_date: Date,
+) -> DailyOverrideDeleteResponse:
+    """
+    Remove a one-day override when the student wants
+    to return to the normal saved timetable.
+    """
+    key = (user_id, override_date)
+
+    if key not in DAILY_OVERRIDE_STORE:
+        raise HTTPException(
+            status_code=404,
+            detail="No daily override found for this date.",
+        )
+
+    del DAILY_OVERRIDE_STORE[key]
+
+    return DailyOverrideDeleteResponse(
+        user_id=user_id,
+        date=override_date,
+        message="Daily override removed. Normal weekly timetable will be used.",
     )
 
 
