@@ -1,0 +1,5 @@
+# AlgoMentor AI — development / test dependencies
+# Both packages are already present in the .venv via requirements.txt.
+# This file exists for documentation and CI clarity.
+pytest>=8.0
+httpx>=0.28
