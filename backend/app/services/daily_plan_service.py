@@ -43,7 +43,8 @@ _VALID_WEAK_CONCEPTS: frozenset[str] = frozenset(
 
 _DEFAULT_WEAK_CONCEPT: WeakConcept = "Prefix Sum"
 
-REVISION_NOTE = (
+# Fallback note used when no SM-2 history exists yet.
+_FALLBACK_REVISION_NOTE = (
     "Revision focus is currently derived from completed topics. "
     "SM-2 revision history will be integrated in the next phase."
 )
@@ -397,8 +398,10 @@ def generate_tasks(
 
 def resolve_revision_focus(profile: StudentProfile) -> str | None:
     """
-    Return the first completed topic as the revision focus, or None
-    if the student has not yet completed any topics.
+    Fallback: return the first completed topic as the revision focus,
+    or None if the student has not yet completed any topics.
+
+    Only called when no SM-2 history exists yet.
     """
     if profile.completed_topics:
         return profile.completed_topics[0]
@@ -468,15 +471,33 @@ def build_daily_plan(
     Orchestrate all sub-calculations and return a fully populated
     DailyPlanResponse.  No I/O or HTTP concerns here.
     """
+    # Lazy import to avoid circular dependency at module load time.
+    from app.services.sm2_service import get_sm2_revision_focus  # noqa: PLC0415
+
     # Study budget
     available_minutes = compute_available_minutes(profile, day_schedule, override)
 
     # Derived attributes
-    workload   = derive_workload(profile, available_minutes, override)
-    intensity  = determine_intensity(profile, available_minutes, override)
+    workload  = derive_workload(profile, available_minutes, override)
+    intensity = determine_intensity(profile, available_minutes, override)
 
-    revision_focus = resolve_revision_focus(profile)
-    weak_concept   = resolve_weak_concept(profile)
+    # --- Revision focus: SM-2 if history exists, else fallback ---
+    sm2_focus, sm2_note = get_sm2_revision_focus(user_id, plan_date)
+
+    if sm2_focus is not None:
+        # SM-2 has a due topic
+        revision_focus = sm2_focus
+        revision_note  = sm2_note
+    elif sm2_note != _FALLBACK_REVISION_NOTE:
+        # SM-2 history exists but nothing is due → no forced focus
+        revision_focus = None
+        revision_note  = sm2_note
+    else:
+        # No SM-2 history at all → use profile-based fallback
+        revision_focus = resolve_revision_focus(profile)
+        revision_note  = _FALLBACK_REVISION_NOTE
+
+    weak_concept = resolve_weak_concept(profile)
 
     # Recommendations (shared scoring)
     situation = override.situation if override is not None else "Normal day"
@@ -518,5 +539,5 @@ def build_daily_plan(
         tasks=tasks,
         recommended_problems=recommended_problems,
         plan_reason=plan_reason,
-        revision_note=REVISION_NOTE,
+        revision_note=revision_note,
     )

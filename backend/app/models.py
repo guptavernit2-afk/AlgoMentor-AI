@@ -244,6 +244,79 @@ class DailyOverrideDeleteResponse(BaseModel):
 
 
 # ============================================================
+# SM-2 Revision History Models
+# ============================================================
+
+class TopicReviewRequest(BaseModel):
+    """A student's self-reported recall quality for a DSA topic."""
+
+    topic: str = Field(min_length=2, max_length=60)
+    quality: int = Field(
+        ge=0,
+        le=5,
+        description=(
+            "SM-2 recall quality: 0=blackout, 1=wrong/familiar, "
+            "2=wrong/easy-after, 3=correct/hard, 4=correct/hesitant, "
+            "5=perfect recall."
+        ),
+    )
+    reviewed_on: Date
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "topic": "Arrays",
+                    "quality": 4,
+                    "reviewed_on": "2026-05-22",
+                }
+            ]
+        }
+    }
+
+
+class TopicRevisionState(BaseModel):
+    """Current SM-2 state for one topic belonging to one student."""
+
+    topic: str
+    repetitions: int
+    interval_days: int
+    easiness_factor: float
+    last_quality: int
+    last_reviewed_on: Date
+    next_review_date: Date
+    total_reviews: int
+    is_due: bool | None = None
+    days_overdue: int | None = None
+
+
+class TopicReviewRecord(BaseModel):
+    """Immutable audit record of a single review event."""
+
+    topic: str
+    quality: int
+    reviewed_on: Date
+    interval_days_after_review: int
+    easiness_factor_after_review: float
+    next_review_date: Date
+
+
+class TopicReviewResponse(BaseModel):
+    user_id: str
+    state: TopicRevisionState
+    message: str
+
+
+class RevisionQueueResponse(BaseModel):
+    user_id: str
+    as_of_date: Date
+    due_topics: list[TopicRevisionState]
+    upcoming_topics: list[TopicRevisionState]
+    untracked_completed_topics: list[str]
+    message: str
+
+
+# ============================================================
 # Daily Plan Models
 # ============================================================
 

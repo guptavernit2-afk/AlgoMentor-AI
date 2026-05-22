@@ -1,7 +1,7 @@
 """
 AlgoMentor AI — in-memory storage.
 
-Houses the three in-memory dictionaries that act as a temporary data
+Houses the five in-memory dictionaries that act as a temporary data
 layer until Supabase persistence is added.  Also exports the two
 require_* helpers so routers never import from each other.
 """
@@ -10,7 +10,13 @@ from datetime import date as Date
 
 from fastapi import HTTPException
 
-from app.models import DailyOverride, StudentProfile, WeeklySchedule
+from app.models import (
+    DailyOverride,
+    StudentProfile,
+    TopicReviewRecord,
+    TopicRevisionState,
+    WeeklySchedule,
+)
 
 
 # ============================================================
@@ -21,6 +27,12 @@ from app.models import DailyOverride, StudentProfile, WeeklySchedule
 PROFILE_STORE: dict[str, StudentProfile] = {}
 SCHEDULE_STORE: dict[str, WeeklySchedule] = {}
 DAILY_OVERRIDE_STORE: dict[tuple[str, Date], DailyOverride] = {}
+
+# Key: (user_id, normalised_topic_name)
+REVISION_STATE_STORE: dict[tuple[str, str], TopicRevisionState] = {}
+
+# Key: user_id → list of all review records in chronological order
+REVISION_HISTORY_STORE: dict[str, list[TopicReviewRecord]] = {}
 
 
 # ============================================================
@@ -37,6 +49,8 @@ def clear_all_stores() -> None:
     PROFILE_STORE.clear()
     SCHEDULE_STORE.clear()
     DAILY_OVERRIDE_STORE.clear()
+    REVISION_STATE_STORE.clear()
+    REVISION_HISTORY_STORE.clear()
 
 
 # ============================================================
