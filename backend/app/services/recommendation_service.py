@@ -137,3 +137,40 @@ def build_plan_note(workload: Workload, situation: Situation) -> str:
         return "More time available: medium reinforcement problems are boosted."
 
     return "Balanced day: combining revision with current-topic practice."
+
+
+# ============================================================
+# Shared ranked recommendation builder
+# Used by both POST /api/recommendations and the daily plan service.
+# ============================================================
+
+from app.models import ProblemRecommendation  # noqa: E402 — avoids circular at module level
+
+
+def get_ranked_recommendations(
+    workload: Workload,
+    situation: Situation,
+    weak_concept: str,
+    goal: Goal,
+) -> list[ProblemRecommendation]:
+    """
+    Score every problem in PROBLEM_BANK and return them sorted
+    by match_score descending.
+
+    This is the single source of truth for recommendation ranking,
+    shared by the recommendations router and the daily plan service.
+    """
+    ranked: list[ProblemRecommendation] = []
+
+    for problem in PROBLEM_BANK:
+        score = calculate_match_score(
+            problem=problem,
+            workload=workload,
+            situation=situation,
+            weak_concept=weak_concept,
+            goal=goal,
+        )
+        ranked.append(ProblemRecommendation(**problem, match_score=score))
+
+    ranked.sort(key=lambda p: p.match_score, reverse=True)
+    return ranked

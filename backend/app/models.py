@@ -244,6 +244,42 @@ class DailyOverrideDeleteResponse(BaseModel):
 
 
 # ============================================================
+# Daily Plan Models
+# ============================================================
+
+PlanIntensity = Literal["Rest", "Light", "Balanced", "Deep"]
+
+TaskType = Literal["Revision", "Current Topic", "Mixed Practice", "Review", "Recovery"]
+
+
+class DailyPlanTask(BaseModel):
+    task_id: int
+    title: str
+    topic: str
+    duration_minutes: int
+    task_type: TaskType
+    reason: str
+
+
+class DailyPlanResponse(BaseModel):
+    user_id: str
+    date: Date
+    day_name: str
+    schedule_for_today: "DaySchedule"
+    override_applied: bool
+    daily_override: "DailyOverride | None"
+    derived_workload: Workload
+    plan_intensity: PlanIntensity
+    available_minutes: int
+    revision_focus: str | None
+    current_topic: str
+    tasks: list[DailyPlanTask]
+    recommended_problems: list["ProblemRecommendation"]
+    plan_reason: str
+    revision_note: str
+
+
+# ============================================================
 # Recommendation Models
 # ============================================================
 
