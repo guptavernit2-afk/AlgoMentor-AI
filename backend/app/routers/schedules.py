@@ -3,12 +3,16 @@ AlgoMentor AI — weekly schedule endpoints.
 
 PUT /api/users/{user_id}/weekly-schedule
 GET /api/users/{user_id}/weekly-schedule
+
+Storage is delegated to the repository layer (memory or postgres),
+selected automatically from STORAGE_BACKEND in the environment.
 """
 
 from fastapi import APIRouter, HTTPException
 
 from app.models import WeeklySchedule, WeeklyScheduleResponse
-from app.storage import SCHEDULE_STORE, require_schedule
+from app.repositories.schedule_repository import get_schedule_repository
+from app.services.schedule_service import require_schedule
 
 
 router = APIRouter(prefix="/api/users", tags=["Weekly Schedule"])
@@ -84,14 +88,15 @@ def save_weekly_schedule(
     The timetable is entered once and reused every day until
     the student updates it.
     """
+    # --- Validation: exactly seven unique weekdays ---
     submitted_days = [day.day for day in schedule.days]
-
     if len(set(submitted_days)) != 7:
         raise HTTPException(
             status_code=400,
             detail="Weekly schedule must contain each weekday exactly once.",
         )
 
+    # --- Validation: free day must not contain classes ---
     for day_schedule in schedule.days:
         if day_schedule.is_free_day and day_schedule.classes:
             raise HTTPException(
@@ -102,10 +107,15 @@ def save_weekly_schedule(
                 ),
             )
 
-    # New: time-range and overlap validation
+    # --- Validation: class time-ranges and overlap ---
     _validate_class_slots(schedule)
 
-    SCHEDULE_STORE[user_id] = schedule
+    # --- Persist ---
+    try:
+        repo = get_schedule_repository()
+        repo.save_schedule(user_id, schedule)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from None
 
     return WeeklyScheduleResponse(
         user_id=user_id,

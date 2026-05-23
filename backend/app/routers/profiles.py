@@ -3,12 +3,16 @@ AlgoMentor AI — student profile endpoints.
 
 PUT /api/users/{user_id}/profile
 GET /api/users/{user_id}/profile
+
+Storage is delegated to the repository layer (memory or postgres),
+selected automatically from STORAGE_BACKEND in the environment.
 """
 
 from fastapi import APIRouter, HTTPException
 
 from app.models import StudentProfile, StudentProfileResponse
-from app.storage import PROFILE_STORE, require_profile
+from app.repositories.profile_repository import get_profile_repository
+from app.services.profile_service import require_profile
 
 
 router = APIRouter(prefix="/api/users", tags=["Student Profile"])
@@ -37,7 +41,11 @@ def save_student_profile(
             ),
         )
 
-    PROFILE_STORE[user_id] = profile
+    try:
+        repo = get_profile_repository()
+        repo.save_profile(user_id, profile)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from None
 
     return StudentProfileResponse(
         user_id=user_id,

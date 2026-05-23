@@ -4,6 +4,9 @@ AlgoMentor AI — daily override / quick check-in endpoints.
 PUT    /api/users/{user_id}/daily-overrides/{override_date}
 GET    /api/users/{user_id}/daily-overrides/{override_date}
 DELETE /api/users/{user_id}/daily-overrides/{override_date}
+
+Storage is delegated to the repository layer (memory or postgres),
+selected automatically from STORAGE_BACKEND in the environment.
 """
 
 from datetime import date as Date
@@ -15,11 +18,9 @@ from app.models import (
     DailyOverrideDeleteResponse,
     DailyOverrideResponse,
 )
-from app.storage import (
-    DAILY_OVERRIDE_STORE,
-    require_profile,
-    require_schedule,
-)
+from app.repositories.daily_override_repository import get_daily_override_repository
+from app.services.daily_override_service import require_daily_override
+from app.storage import require_profile, require_schedule
 
 
 router = APIRouter(prefix="/api/users", tags=["Daily Override"])
@@ -49,7 +50,11 @@ def save_daily_override(
     require_profile(user_id)
     require_schedule(user_id)
 
-    DAILY_OVERRIDE_STORE[(user_id, override_date)] = override
+    try:
+        repo = get_daily_override_repository()
+        repo.save_override(user_id, override_date, override)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from None
 
     return DailyOverrideResponse(
         user_id=user_id,
@@ -68,13 +73,7 @@ def get_daily_override(
     override_date: Date,
 ) -> DailyOverrideResponse:
     """Retrieve a saved one-day schedule/check-in override."""
-    override = DAILY_OVERRIDE_STORE.get((user_id, override_date))
-
-    if override is None:
-        raise HTTPException(
-            status_code=404,
-            detail="No daily override found for this date.",
-        )
+    override = require_daily_override(user_id, override_date)
 
     return DailyOverrideResponse(
         user_id=user_id,
@@ -96,15 +95,17 @@ def delete_daily_override(
     Remove a one-day override when the student wants
     to return to the normal saved timetable.
     """
-    key = (user_id, override_date)
+    try:
+        repo = get_daily_override_repository()
+        deleted = repo.delete_override(user_id, override_date)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from None
 
-    if key not in DAILY_OVERRIDE_STORE:
+    if not deleted:
         raise HTTPException(
             status_code=404,
             detail="No daily override found for this date.",
         )
-
-    del DAILY_OVERRIDE_STORE[key]
 
     return DailyOverrideDeleteResponse(
         user_id=user_id,

@@ -370,3 +370,91 @@ def test_plan_date_weekday_derived_correctly(client):
     sat = client.get(f"/api/users/demo-user/daily-plan/{SATURDAY_DATE}").json()
     assert fri["day_name"] == "Friday"
     assert sat["day_name"] == "Saturday"
+
+
+# ============================================================
+# Daily Plan + Repository Integration tests
+#
+# These tests confirm that:
+# - get_optional_daily_override() is used by the daily plan router.
+# - In memory mode, a saved override still changes the generated plan.
+# - In memory mode, no override means the regular schedule is used.
+# - No Postgres engine call occurs during any of these tests.
+# ============================================================
+
+def test_daily_plan_uses_repository_backed_exam_override(client):
+    """
+    After saving an Internal exam override through the API (which now uses
+    the repository layer), the daily plan must reflect:
+      - override_applied == True
+      - derived_workload == "High"
+      - plan_intensity == "Light"
+      - available_minutes == minimum_daily_minutes (20)
+    """
+    _setup(client)
+    client.put(
+        f"/api/users/demo-user/daily-overrides/{FRIDAY_DATE}",
+        json=EXAM_OVERRIDE,
+    )
+
+    r = client.get(f"/api/users/demo-user/daily-plan/{FRIDAY_DATE}")
+    assert r.status_code == 200, r.text
+    data = r.json()
+
+    assert data["override_applied"] is True
+    assert data["derived_workload"] == "High"
+    assert data["plan_intensity"] == "Light"
+    assert data["available_minutes"] == 20  # minimum_daily_minutes
+
+
+def test_daily_plan_no_override_uses_regular_schedule(client):
+    """
+    With no override saved, the daily plan for Friday must use the regular
+    schedule (300 class minutes → budget 60) without applying any override.
+    """
+    _setup(client)
+
+    r = client.get(f"/api/users/demo-user/daily-plan/{FRIDAY_DATE}")
+    assert r.status_code == 200, r.text
+    data = r.json()
+
+    assert data["override_applied"] is False
+    assert data["daily_override"] is None
+    assert data["available_minutes"] == 60  # 300 class mins → 50% of 120
+
+
+def test_daily_plan_free_day_override_uses_max_budget(client):
+    """
+    A 'Free day' override on a normally busy Friday should give max budget.
+    """
+    _setup(client)
+    client.put(
+        f"/api/users/demo-user/daily-overrides/{FRIDAY_DATE}",
+        json={"situation": "Free day", "extra_available_minutes": 0, "energy_level": "Normal"},
+    )
+
+    r = client.get(f"/api/users/demo-user/daily-plan/{FRIDAY_DATE}")
+    assert r.status_code == 200, r.text
+    data = r.json()
+
+    assert data["override_applied"] is True
+    assert data["available_minutes"] == 120  # maximum_daily_minutes
+    assert data["plan_intensity"] == "Deep"
+
+
+def test_daily_plan_override_integration_does_not_call_db(client):
+    """
+    The entire PUT override → GET daily plan flow must complete without
+    triggering the DB engine guard. Confirms memory-mode isolation.
+    """
+    _setup(client)
+    r1 = client.put(
+        f"/api/users/demo-user/daily-overrides/{FRIDAY_DATE}",
+        json=EXAM_OVERRIDE,
+    )
+    assert r1.status_code == 200
+
+    r2 = client.get(f"/api/users/demo-user/daily-plan/{FRIDAY_DATE}")
+    assert r2.status_code == 200
+    assert r2.json()["override_applied"] is True
+    # Reaching here proves _engine() was not called (guard would have raised AssertionError)

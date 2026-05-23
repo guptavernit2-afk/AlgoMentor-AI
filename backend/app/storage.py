@@ -2,13 +2,14 @@
 AlgoMentor AI — in-memory storage.
 
 Houses the five in-memory dictionaries that act as a temporary data
-layer until Supabase persistence is added.  Also exports the two
-require_* helpers so routers never import from each other.
+layer until Supabase persistence is added.  Also exports shared guard
+helpers so routers never import from each other.
+
+NOTE: require_profile  → app.services.profile_service  (re-exported here)
+      require_schedule → app.services.schedule_service (re-exported here)
 """
 
 from datetime import date as Date
-
-from fastapi import HTTPException
 
 from app.models import (
     DailyOverride,
@@ -57,27 +58,11 @@ def clear_all_stores() -> None:
 # Shared guard helpers used by multiple routers
 # ============================================================
 
-def require_profile(user_id: str) -> StudentProfile:
-    """Return saved profile or raise a clear not-found error."""
-    profile = PROFILE_STORE.get(user_id)
-
-    if profile is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Student profile not found. Complete onboarding first.",
-        )
-
-    return profile
+# require_profile is implemented in profile_service (repository-backed)
+# and re-exported here so all existing routers keep their import unchanged.
+from app.services.profile_service import require_profile  # noqa: E402,F401
 
 
-def require_schedule(user_id: str) -> WeeklySchedule:
-    """Return saved weekly schedule or raise a clear not-found error."""
-    schedule = SCHEDULE_STORE.get(user_id)
-
-    if schedule is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Weekly schedule not found. Save regular timetable first.",
-        )
-
-    return schedule
+# require_schedule is implemented in schedule_service (repository-backed)
+# and re-exported here so all existing routers keep their import unchanged.
+from app.services.schedule_service import require_schedule  # noqa: E402,F401

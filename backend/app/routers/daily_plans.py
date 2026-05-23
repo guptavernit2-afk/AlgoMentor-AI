@@ -13,9 +13,9 @@ from datetime import date as Date
 from fastapi import APIRouter, HTTPException
 
 from app.models import DailyPlanResponse
+from app.services.daily_override_service import get_optional_daily_override
 from app.services.daily_plan_service import build_daily_plan
 from app.storage import (
-    DAILY_OVERRIDE_STORE,
     require_profile,
     require_schedule,
 )
@@ -77,8 +77,9 @@ def get_daily_plan(
             ),
         )
 
-    # Look up any daily override for this exact date
-    override = DAILY_OVERRIDE_STORE.get((user_id, plan_date))
+    # Look up any daily override for this exact date (repository-backed).
+    # Returns None if no override exists — the plan proceeds with regular schedule.
+    override = get_optional_daily_override(user_id, plan_date)
 
     # Delegate all computation to the service layer
     return build_daily_plan(

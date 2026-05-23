@@ -26,10 +26,6 @@ from app.models import (
     TopicReviewRequest,
     TopicRevisionState,
 )
-from app.storage import (
-    REVISION_HISTORY_STORE,
-    REVISION_STATE_STORE,
-)
 
 
 # ============================================================
@@ -163,14 +159,17 @@ def record_topic_review(
 
     Returns the updated TopicRevisionState.
     """
+    from app.repositories.revision_repository import get_revision_repository  # noqa: PLC0415
+
     # Resolve canonical name (also validates against profile)
     canonical_topic = _resolve_canonical_topic(request.topic, profile)
-    norm_key = (user_id, normalise_topic_name(canonical_topic))
 
-    # Get previous state (None if first review)
-    previous_state = REVISION_STATE_STORE.get(norm_key)
+    repo = get_revision_repository()
 
-    # Calculate new SM-2 state
+    # Get previous state (None if first review) — via repository
+    previous_state = repo.get_state(user_id, canonical_topic)
+
+    # Calculate new SM-2 state (algorithm unchanged)
     new_state = calculate_sm2_update(
         previous_state=previous_state,
         topic=canonical_topic,
@@ -178,10 +177,7 @@ def record_topic_review(
         reviewed_on=request.reviewed_on,
     )
 
-    # Persist new state
-    REVISION_STATE_STORE[norm_key] = new_state
-
-    # Append audit record to history
+    # Build the review audit record
     record = TopicReviewRecord(
         topic=canonical_topic,
         quality=request.quality,
@@ -190,7 +186,9 @@ def record_topic_review(
         easiness_factor_after_review=new_state.easiness_factor,
         next_review_date=new_state.next_review_date,
     )
-    REVISION_HISTORY_STORE.setdefault(user_id, []).append(record)
+
+    # Persist state + history atomically through repository
+    repo.save_review_result(user_id, new_state, record)
 
     return new_state
 
@@ -211,14 +209,16 @@ def get_revision_queue(
     upcoming_topics → next_review_date > as_of_date, sorted soonest first.
     untracked_completed_topics → completed_topics with no SM-2 state yet.
     """
-    # Gather all states belonging to this user
-    tracked_states: list[TopicRevisionState] = []
-    tracked_normalised: set[str] = set()
+    from app.repositories.revision_repository import get_revision_repository  # noqa: PLC0415
 
-    for (uid, norm_topic), state in REVISION_STATE_STORE.items():
-        if uid != user_id:
-            continue
-        tracked_normalised.add(norm_topic)
+    repo = get_revision_repository()
+    all_states = repo.list_states(user_id)
+
+    tracked_normalised: set[str] = set()
+    tracked_states: list[TopicRevisionState] = []
+
+    for state in all_states:
+        tracked_normalised.add(normalise_topic_name(state.topic))
 
         delta = (as_of_date - state.next_review_date).days
         enriched = state.model_copy(
@@ -278,17 +278,15 @@ def get_sm2_revision_focus(
       2. At least one due topic → use the most-overdue one.
       3. States exist but none are due → no forced focus; mention nearest date.
     """
+    from app.repositories.revision_repository import get_revision_repository  # noqa: PLC0415
+
     _FALLBACK_NOTE = (
         "Revision focus is currently derived from completed topics. "
         "SM-2 revision history will be integrated in the next phase."
     )
 
-    # Collect all states for this user
-    user_states = [
-        state
-        for (uid, _), state in REVISION_STATE_STORE.items()
-        if uid == user_id
-    ]
+    repo = get_revision_repository()
+    user_states = repo.list_states(user_id)
 
     if not user_states:
         # Case 1: no SM-2 history yet → use fallback
