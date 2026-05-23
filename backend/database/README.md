@@ -80,3 +80,36 @@ Enabling RLS locks down the table by default — no row is readable or writable 
 | Connection layer | Wire `asyncpg` or `psycopg` in FastAPI, load credentials from env |
 | Storage migration | Replace `PROFILE_STORE`, `SCHEDULE_STORE`, etc. with async DB queries |
 | Secret management | Store `DATABASE_URL` in `.env` (git-ignored) and production secrets manager |
+
+---
+
+## Student Profile Persistence ✅
+
+`public.student_profiles` is the first table actively used by the FastAPI backend.
+
+### Architecture
+
+The Student Profile API (`PUT /api/users/{user_id}/profile` and `GET /api/users/{user_id}/profile`) now routes through a **repository layer** (`app/repositories/profile_repository.py`) that selects its storage backend at startup:
+
+| `STORAGE_BACKEND` | Implementation | Used by |
+|---|---|---|
+| `memory` (default) | `MemoryProfileRepository` | All automated tests |
+| `postgres` | `PostgresProfileRepository` | Local Supabase / production |
+
+In `postgres` mode, the repository performs an upsert (`INSERT … ON CONFLICT DO UPDATE`) so repeated `PUT` requests update the same row without creating duplicates. The `updated_at` column is refreshed automatically by the `set_updated_at()` database trigger.
+
+### Unit tests
+
+Automated tests always run in `memory` mode. No test connects to the real Supabase project.
+
+### Manual verification
+
+After setting `STORAGE_BACKEND=postgres` in `backend/.env`, run from the `backend/` folder:
+
+```bash
+python -m scripts.smoke_test_profile_persistence
+```
+
+This writes one test row with `user_id = demo-user-db-test` to `public.student_profiles`. Confirm it visually in **Supabase Table Editor**, then delete it manually.
+
+> The script never prints database credentials, passwords, host names, or connection URLs.

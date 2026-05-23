@@ -4,6 +4,9 @@ AlgoMentor AI — in-memory storage.
 Houses the five in-memory dictionaries that act as a temporary data
 layer until Supabase persistence is added.  Also exports the two
 require_* helpers so routers never import from each other.
+
+NOTE: require_profile is now implemented in app.services.profile_service
+and re-exported here so that all existing callers remain unchanged.
 """
 
 from datetime import date as Date
@@ -57,17 +60,9 @@ def clear_all_stores() -> None:
 # Shared guard helpers used by multiple routers
 # ============================================================
 
-def require_profile(user_id: str) -> StudentProfile:
-    """Return saved profile or raise a clear not-found error."""
-    profile = PROFILE_STORE.get(user_id)
-
-    if profile is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Student profile not found. Complete onboarding first.",
-        )
-
-    return profile
+# require_profile is implemented in profile_service (repository-backed)
+# and re-exported here so all existing routers keep their import unchanged.
+from app.services.profile_service import require_profile  # noqa: E402,F401
 
 
 def require_schedule(user_id: str) -> WeeklySchedule:
