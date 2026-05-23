@@ -44,6 +44,12 @@ class Settings(BaseSettings):
     db_password: SecretStr | None = None
     db_sslmode: str = "require"
 
+    # ------------------------------------------------------------------
+    # Frontend origin fields (CORS)
+    # ------------------------------------------------------------------
+    frontend_origin: str = "http://localhost:5173"
+    frontend_origin_alt: str = "http://127.0.0.1:5173"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

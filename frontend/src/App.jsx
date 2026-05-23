@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { checkBackendHealth } from "./services/api";
 import "./App.css";
 
 const topics = [
@@ -250,6 +251,13 @@ function App() {
   const [selectedProblem, setSelectedProblem] = useState(recommendedProblems[0]);
   const [userCode, setUserCode] = useState(recommendedProblems[0].code);
   const [reviewGenerated, setReviewGenerated] = useState(false);
+  const [backendStatus, setBackendStatus] = useState("PROTOTYPE · CHECKING API");
+
+  useEffect(() => {
+    checkBackendHealth().then((isHealthy) => {
+      setBackendStatus(isHealthy ? "PROTOTYPE · API CONNECTED" : "PROTOTYPE · API OFFLINE");
+    });
+  }, []);
 
   const [collegeSchedule, setCollegeSchedule] = useState("9 AM - 4 PM");
   const [availableTime, setAvailableTime] = useState("1 hour");
@@ -329,7 +337,7 @@ function App() {
         <div className="nav-logo">
           <span className="nav-logo-icon">⬡</span>
           <span className="nav-logo-text">AlgoMentor<span className="nav-logo-accent"> AI</span></span>
-          <span className="prototype-badge">Prototype</span>
+          <span className="prototype-badge">{backendStatus}</span>
         </div>
         <div className="nav-links">
           <a href="#dashboard" className="nav-link nav-link-active">Dashboard</a>
