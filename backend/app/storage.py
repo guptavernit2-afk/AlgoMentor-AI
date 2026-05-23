@@ -2,17 +2,14 @@
 AlgoMentor AI — in-memory storage.
 
 Houses the five in-memory dictionaries that act as a temporary data
-layer until Supabase persistence is added.  Also exports the two
-require_* helpers so routers never import from each other.
+layer until Supabase persistence is added.  Also exports shared guard
+helpers so routers never import from each other.
 
-NOTE: require_profile is implemented in app.services.profile_service
-      require_schedule is implemented in app.services.schedule_service
-Both are re-exported here so all existing callers remain unchanged.
+NOTE: require_profile  → app.services.profile_service  (re-exported here)
+      require_schedule → app.services.schedule_service (re-exported here)
 """
 
 from datetime import date as Date
-
-from fastapi import HTTPException
 
 from app.models import (
     DailyOverride,

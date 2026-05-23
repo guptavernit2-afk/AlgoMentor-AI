@@ -164,3 +164,71 @@ This writes:
 Confirm them visually in **Supabase Table Editor**, then delete them manually.
 
 > The script never prints database credentials, passwords, host names, or connection URLs.
+
+---
+
+## Daily Override Persistence ✅
+
+`public.daily_overrides` is the third table actively used by the FastAPI backend.
+
+### Architecture
+
+The Daily Override API (`PUT`, `GET`, `DELETE /api/users/{user_id}/daily-overrides/{override_date}`) routes through a **repository layer** (`app/repositories/daily_override_repository.py`):
+
+| `STORAGE_BACKEND` | Implementation | Used by |
+|---|---|---|
+| `memory` (default) | `MemoryDailyOverrideRepository` | All automated tests |
+| `postgres` | `PostgresDailyOverrideRepository` | Local Supabase / production |
+
+### One row per user per date
+
+Daily overrides are keyed by `(user_id, override_date)`. They are stored separately from the weekly schedule and **never modify the regular weekly timetable**. The Supabase `UNIQUE (user_id, override_date)` constraint prevents duplicate overrides for the same date.
+
+Each row contains:
+- `user_id` — foreign key to `public.student_profiles` (ON DELETE CASCADE)
+- `override_date` — the specific date this applies to
+- `situation` — e.g. `"Internal exam / Test"`, `"Free day"`, `"Assignment"` etc.
+- `extra_available_minutes` — temporary DSA time adjustment (-240 to +480)
+- `energy_level` — `"Low"`, `"Normal"`, or `"High"`
+- `note` — optional student note (≤ 200 characters)
+
+### Smart Daily Plan integration
+
+`GET /api/users/{user_id}/daily-plan/{plan_date}` now reads daily overrides through `get_optional_daily_override()` (in `app/services/daily_override_service.py`), which delegates to whichever repository is active:
+
+- In **memory mode**: reads from `DAILY_OVERRIDE_STORE` dict (identical to pre-migration behaviour).
+- In **postgres mode**: reads from `public.daily_overrides` — a persisted override survives backend restarts and affects the derived workload, available minutes, task list, and recommendations exactly as in memory mode.
+
+### Service layer
+
+`app/services/daily_override_service.py` provides:
+
+| Function | Used by | Behaviour on missing override |
+|---|---|---|
+| `require_daily_override(user_id, date)` | GET / DELETE endpoints | Raises HTTP 404 |
+| `get_optional_daily_override(user_id, date)` | Smart Daily Plan | Returns `None` |
+
+### Unit tests
+
+Automated tests always run in `memory` mode. No test connects to the real Supabase project. The `conftest.py` Layer 3 guard additionally blocks `PostgresDailyOverrideRepository._engine()` from being called.
+
+### Manual verification
+
+After setting `STORAGE_BACKEND=postgres` in `backend/.env`, run from the `backend/` folder:
+
+```bash
+python -m scripts.smoke_test_daily_override_persistence
+```
+
+This writes:
+- One test row to `public.student_profiles` (`demo-user-override-db-test`)
+- Seven schedule rows to `public.weekly_schedules`
+- One override row to `public.daily_overrides` (date: `2026-05-22`)
+
+And then generates a Smart Daily Plan via the service layer and asserts the persisted Internal exam override is applied correctly.
+
+### Cascade delete
+
+After visual confirmation in Supabase Table Editor, delete only the `student_profiles` row for `demo-user-override-db-test`. The `ON DELETE CASCADE` policy automatically removes the related `weekly_schedules` (7 rows) and `daily_overrides` (1 row) for that user.
+
+> The script never prints database credentials, passwords, host names, or connection URLs.

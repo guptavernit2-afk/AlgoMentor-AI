@@ -68,18 +68,21 @@ def _reset_all_state():
     from app.config import get_settings
     from app.repositories.profile_repository import get_profile_repository
     from app.repositories.schedule_repository import get_schedule_repository
+    from app.repositories.daily_override_repository import get_daily_override_repository
     from app.storage import clear_all_stores
 
     # ---- setup ----
     get_settings.cache_clear()
     get_profile_repository.cache_clear()
     get_schedule_repository.cache_clear()
+    get_daily_override_repository.cache_clear()
     clear_all_stores()
 
     yield
 
     # ---- teardown ----
     clear_all_stores()
+    get_daily_override_repository.cache_clear()
     get_schedule_repository.cache_clear()
     get_profile_repository.cache_clear()
     get_settings.cache_clear()
@@ -108,12 +111,13 @@ def _reset_all_state():
 @pytest.fixture(autouse=True)
 def _block_live_db_engine(monkeypatch):
     """
-    Replace both Postgres repository _engine() methods with a hard guard that
+    Replace all Postgres repository _engine() methods with a hard guard that
     raises AssertionError if called during automated tests.
 
     Covers:
       - PostgresProfileRepository._engine()
       - PostgresScheduleRepository._engine()
+      - PostgresDailyOverrideRepository._engine()
 
     This is defence-in-depth on top of Layer 1:
     - Layer 1 prevents Postgres mode from being selected.
@@ -128,6 +132,7 @@ def _block_live_db_engine(monkeypatch):
 
     from app.repositories import profile_repository as profile_repo_module
     from app.repositories import schedule_repository as schedule_repo_module
+    from app.repositories import daily_override_repository as override_repo_module
 
     monkeypatch.setattr(
         profile_repo_module.PostgresProfileRepository,
@@ -136,6 +141,11 @@ def _block_live_db_engine(monkeypatch):
     )
     monkeypatch.setattr(
         schedule_repo_module.PostgresScheduleRepository,
+        "_engine",
+        staticmethod(_forbidden_engine),
+    )
+    monkeypatch.setattr(
+        override_repo_module.PostgresDailyOverrideRepository,
         "_engine",
         staticmethod(_forbidden_engine),
     )
