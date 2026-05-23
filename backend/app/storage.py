@@ -5,8 +5,9 @@ Houses the five in-memory dictionaries that act as a temporary data
 layer until Supabase persistence is added.  Also exports the two
 require_* helpers so routers never import from each other.
 
-NOTE: require_profile is now implemented in app.services.profile_service
-and re-exported here so that all existing callers remain unchanged.
+NOTE: require_profile is implemented in app.services.profile_service
+      require_schedule is implemented in app.services.schedule_service
+Both are re-exported here so all existing callers remain unchanged.
 """
 
 from datetime import date as Date
@@ -65,14 +66,6 @@ def clear_all_stores() -> None:
 from app.services.profile_service import require_profile  # noqa: E402,F401
 
 
-def require_schedule(user_id: str) -> WeeklySchedule:
-    """Return saved weekly schedule or raise a clear not-found error."""
-    schedule = SCHEDULE_STORE.get(user_id)
-
-    if schedule is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Weekly schedule not found. Save regular timetable first.",
-        )
-
-    return schedule
+# require_schedule is implemented in schedule_service (repository-backed)
+# and re-exported here so all existing routers keep their import unchanged.
+from app.services.schedule_service import require_schedule  # noqa: E402,F401

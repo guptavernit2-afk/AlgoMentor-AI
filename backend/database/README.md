@@ -113,3 +113,54 @@ python -m scripts.smoke_test_profile_persistence
 This writes one test row with `user_id = demo-user-db-test` to `public.student_profiles`. Confirm it visually in **Supabase Table Editor**, then delete it manually.
 
 > The script never prints database credentials, passwords, host names, or connection URLs.
+
+---
+
+## Weekly Schedule Persistence ✅
+
+`public.weekly_schedules` is the second table actively used by the FastAPI backend.
+
+### Architecture
+
+The Weekly Schedule API (`PUT /api/users/{user_id}/weekly-schedule` and `GET /api/users/{user_id}/weekly-schedule`) routes through a **repository layer** (`app/repositories/schedule_repository.py`):
+
+| `STORAGE_BACKEND` | Implementation | Used by |
+|---|---|---|
+| `memory` (default) | `MemoryScheduleRepository` | All automated tests |
+| `postgres` | `PostgresScheduleRepository` | Local Supabase / production |
+
+### Seven rows per user
+
+Each call to `PUT weekly-schedule` writes **seven rows** to `public.weekly_schedules` — one per weekday. All seven rows are upserted inside a **single database transaction** so the schedule is always saved atomically: either all seven days persist or none do (on error the transaction is rolled back automatically).
+
+Each row contains:
+- `user_id` — foreign key to `public.student_profiles`
+- `day_name` — Monday through Sunday
+- `is_free_day` — boolean
+- `classes` — JSONB array of `{title, start_time, end_time}` objects
+
+Reads return days in canonical **Monday → Sunday** order (enforced by a `CASE` expression in the SQL, not by application-level sorting).
+
+### Compatibility
+
+`require_schedule(user_id)` (used by daily-override and daily-plan endpoints) is now backed by `PostgresScheduleRepository` in postgres mode, so a persisted schedule is visible across backend restarts and to all downstream features.
+
+### Unit tests
+
+Automated tests always run in `memory` mode. No test connects to the real Supabase project. The `conftest.py` Layer 3 guard additionally blocks `PostgresScheduleRepository._engine()` from being called.
+
+### Manual verification
+
+After setting `STORAGE_BACKEND=postgres` in `backend/.env`, run from the `backend/` folder:
+
+```bash
+python -m scripts.smoke_test_weekly_schedule_persistence
+```
+
+This writes:
+- One test row with `user_id = demo-user-schedule-db-test` to `public.student_profiles`
+- Seven schedule rows (one per weekday) to `public.weekly_schedules`
+
+Confirm them visually in **Supabase Table Editor**, then delete them manually.
+
+> The script never prints database credentials, passwords, host names, or connection URLs.

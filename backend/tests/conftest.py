@@ -67,17 +67,20 @@ def _reset_all_state():
     """
     from app.config import get_settings
     from app.repositories.profile_repository import get_profile_repository
+    from app.repositories.schedule_repository import get_schedule_repository
     from app.storage import clear_all_stores
 
     # ---- setup ----
     get_settings.cache_clear()
     get_profile_repository.cache_clear()
+    get_schedule_repository.cache_clear()
     clear_all_stores()
 
     yield
 
     # ---- teardown ----
     clear_all_stores()
+    get_schedule_repository.cache_clear()
     get_profile_repository.cache_clear()
     get_settings.cache_clear()
 
@@ -105,15 +108,17 @@ def _reset_all_state():
 @pytest.fixture(autouse=True)
 def _block_live_db_engine(monkeypatch):
     """
-    Replace PostgresProfileRepository._engine() with a hard guard that
+    Replace both Postgres repository _engine() methods with a hard guard that
     raises AssertionError if called during automated tests.
+
+    Covers:
+      - PostgresProfileRepository._engine()
+      - PostgresScheduleRepository._engine()
 
     This is defence-in-depth on top of Layer 1:
     - Layer 1 prevents Postgres mode from being selected.
     - Layer 3 ensures that even if somehow selected, no connection is made.
     """
-    from app.repositories import profile_repository as repo_module
-
     def _forbidden_engine():
         raise AssertionError(
             "Live PostgreSQL access is forbidden during pytest. "
@@ -121,8 +126,16 @@ def _block_live_db_engine(monkeypatch):
             "If you need to test Postgres behaviour, use a MagicMock engine."
         )
 
+    from app.repositories import profile_repository as profile_repo_module
+    from app.repositories import schedule_repository as schedule_repo_module
+
     monkeypatch.setattr(
-        repo_module.PostgresProfileRepository,
+        profile_repo_module.PostgresProfileRepository,
+        "_engine",
+        staticmethod(_forbidden_engine),
+    )
+    monkeypatch.setattr(
+        schedule_repo_module.PostgresScheduleRepository,
         "_engine",
         staticmethod(_forbidden_engine),
     )
