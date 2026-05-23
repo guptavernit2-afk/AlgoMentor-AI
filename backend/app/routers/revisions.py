@@ -19,7 +19,8 @@ from app.services.sm2_service import (
     get_revision_queue,
     record_topic_review,
 )
-from app.storage import REVISION_HISTORY_STORE, require_profile
+from app.storage import require_profile
+from app.repositories.revision_repository import get_revision_repository
 
 
 router = APIRouter(prefix="/api/users", tags=["Revision History (SM-2)"])
@@ -41,7 +42,11 @@ def submit_topic_review(
     Returns the updated revision state including the next scheduled review date.
     """
     profile = require_profile(user_id)
-    new_state = record_topic_review(user_id=user_id, profile=profile, request=request)
+    try:
+        new_state = record_topic_review(user_id=user_id, profile=profile, request=request)
+    except RuntimeError as exc:
+        from fastapi import HTTPException  # noqa: PLC0415
+        raise HTTPException(status_code=503, detail=str(exc)) from None
 
     return TopicReviewResponse(
         user_id=user_id,
@@ -83,8 +88,14 @@ def get_revision_history(user_id: str) -> dict:
     Each entry shows what quality was submitted, what interval was assigned,
     and what the next review date became.
     """
+    from fastapi import HTTPException  # noqa: PLC0415
     require_profile(user_id)
-    history = REVISION_HISTORY_STORE.get(user_id, [])
+    try:
+        repo = get_revision_repository()
+        history = repo.list_history(user_id)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from None
+
     return {
         "user_id": user_id,
         "total_records": len(history),

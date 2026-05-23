@@ -232,3 +232,51 @@ And then generates a Smart Daily Plan via the service layer and asserts the pers
 After visual confirmation in Supabase Table Editor, delete only the `student_profiles` row for `demo-user-override-db-test`. The `ON DELETE CASCADE` policy automatically removes the related `weekly_schedules` (7 rows) and `daily_overrides` (1 row) for that user.
 
 > The script never prints database credentials, passwords, host names, or connection URLs.
+
+---
+
+## SM-2 Revision State and History Persistence ✅
+
+The final core database feature persists `public.topic_revision_states` and `public.topic_review_history`.
+
+### Architecture
+
+The SM-2 endpoints (`POST /api/users/{user_id}/revision-reviews`, `GET .../revision-queue`, and `GET .../revision-history`) route through the `sm2_service.py` to calculate intervals, and persist through `app/repositories/revision_repository.py`:
+
+| `STORAGE_BACKEND` | Implementation | Used by |
+|---|---|---|
+| `memory` (default) | `MemoryRevisionRepository` | All automated tests |
+| `postgres` | `PostgresRevisionRepository` | Local Supabase / production |
+
+### Atomic State + History Writes
+
+When a student submits a topic review (quality score 0–5), the repository performs two database effects inside a **single `engine.begin()` transaction**:
+
+1. **Upsert state** into `public.topic_revision_states`: Records the new repetitions, interval_days, easiness_factor, and next_review_date for `(user_id, topic)`.
+2. **Insert history** into `public.topic_review_history`: Appends a new immutable row describing the quality score submitted and the resulting SM-2 state.
+
+If either operation fails, the transaction rolls back. This guarantees the current state and audit log are always perfectly synchronised.
+
+### Smart Daily Plan integration
+
+`GET /api/users/{user_id}/daily-plan/{plan_date}` now reads tracked SM-2 states directly from Supabase (in postgres mode) via `get_revision_repository().list_states()`. 
+
+If any persisted topic is due (`next_review_date <= plan_date`), the Smart Daily Plan automatically focuses on the most overdue topic and limits task duration based on the daily budget.
+
+### Unit tests
+
+Automated tests continue to run in `memory` mode. The `conftest.py` Layer 3 guard actively blocks `PostgresRevisionRepository._engine()`.
+
+### Manual verification
+
+After setting `STORAGE_BACKEND=postgres` in `backend/.env`, run from the `backend/` folder:
+
+```bash
+python -m scripts.smoke_test_sm2_persistence
+```
+
+This simulates a student reviewing the 'Arrays' topic three times, verifies the exact SM-2 interval calculations against Supabase, confirms all three history records are appended correctly, and verifies that the Smart Daily Plan selects the persisted due topic.
+
+### Cascade delete
+
+Delete the `student_profiles` row for `demo-user-sm2-db-test`. The `ON DELETE CASCADE` policy automatically removes the related weekly schedules, the topic revision state, and all three history rows for that user.

@@ -69,6 +69,7 @@ def _reset_all_state():
     from app.repositories.profile_repository import get_profile_repository
     from app.repositories.schedule_repository import get_schedule_repository
     from app.repositories.daily_override_repository import get_daily_override_repository
+    from app.repositories.revision_repository import get_revision_repository
     from app.storage import clear_all_stores
 
     # ---- setup ----
@@ -76,12 +77,14 @@ def _reset_all_state():
     get_profile_repository.cache_clear()
     get_schedule_repository.cache_clear()
     get_daily_override_repository.cache_clear()
+    get_revision_repository.cache_clear()
     clear_all_stores()
 
     yield
 
     # ---- teardown ----
     clear_all_stores()
+    get_revision_repository.cache_clear()
     get_daily_override_repository.cache_clear()
     get_schedule_repository.cache_clear()
     get_profile_repository.cache_clear()
@@ -133,6 +136,7 @@ def _block_live_db_engine(monkeypatch):
     from app.repositories import profile_repository as profile_repo_module
     from app.repositories import schedule_repository as schedule_repo_module
     from app.repositories import daily_override_repository as override_repo_module
+    from app.repositories import revision_repository as revision_repo_module
 
     monkeypatch.setattr(
         profile_repo_module.PostgresProfileRepository,
@@ -146,6 +150,11 @@ def _block_live_db_engine(monkeypatch):
     )
     monkeypatch.setattr(
         override_repo_module.PostgresDailyOverrideRepository,
+        "_engine",
+        staticmethod(_forbidden_engine),
+    )
+    monkeypatch.setattr(
+        revision_repo_module.PostgresRevisionRepository,
         "_engine",
         staticmethod(_forbidden_engine),
     )
