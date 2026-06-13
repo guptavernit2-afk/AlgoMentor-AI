@@ -2,11 +2,18 @@
  * StepReview.jsx — Step 4: Review & Confirm
  *
  * Displays a read-only summary of all collected data.
- * Confirm button logs the final payload to the console.
- * No API calls in this commit.
+ * Commit #2: Confirm now calls the real backend PUT /profile API.
+ *
+ * Props:
+ *   data        — wizard state
+ *   onBack      — back navigation
+ *   onConfirm   — async save handler from OnboardingWizard
+ *   isSaving    — bool: disables confirm button during save
+ *   saveError   — string|null: backend/network error message
+ *   saveSuccess — bool: show success banner after save
  */
 
-export default function StepReview({ data, onBack, onConfirm }) {
+export default function StepReview({ data, onBack, onConfirm, isSaving, saveError, saveSuccess }) {
   // Build the tag arrays for display
   const completedTopics = data.completed_topics_raw
     .split(",")
@@ -134,19 +141,34 @@ export default function StepReview({ data, onBack, onConfirm }) {
         </section>
       </div>
 
-      {/* ── Console note ── */}
-      <p className="ob-console-note">
-        ⚡ Confirm logs your setup to the console. Backend API integration
-        ships in Commit&nbsp;#2.
-      </p>
+      {/* ── Save status area ── */}
+      {saveSuccess && (
+        <div className="ob-banner ob-banner-success" role="status">
+          <span className="ob-banner-icon">✅</span>
+          <span className="ob-banner-text">Profile saved successfully.</span>
+          <span className="ob-banner-sub">AlgoMentor will use this to personalise your dashboard.</span>
+        </div>
+      )}
+
+      {saveError && (
+        <div className="ob-banner ob-banner-error" role="alert">
+          <span className="ob-banner-icon">❌</span>
+          <span className="ob-banner-text">{saveError}</span>
+          <span className="ob-banner-sub">Your data was not saved. Please try again.</span>
+        </div>
+      )}
 
       {/* ── Navigation ── */}
       <div className="ob-nav ob-nav-between">
-        <button className="ob-btn-ghost" onClick={onBack}>
+        <button className="ob-btn-ghost" onClick={onBack} disabled={isSaving}>
           ← Back
         </button>
-        <button className="ob-btn-confirm" onClick={onConfirm}>
-          ✓ Confirm &amp; Save Profile
+        <button
+          className="ob-btn-confirm"
+          onClick={onConfirm}
+          disabled={isSaving}
+        >
+          {isSaving ? "Saving…" : "✓ Confirm & Save Profile"}
         </button>
       </div>
     </div>

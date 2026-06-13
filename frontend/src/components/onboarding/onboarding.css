@@ -925,9 +925,91 @@
   box-shadow: 0 4px 28px rgba(74, 222, 128, 0.25);
 }
 
-.ob-btn-confirm:hover {
+.ob-btn-confirm:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 8px 36px rgba(74, 222, 128, 0.38);
+}
+
+.ob-btn-confirm:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* ══════════════════════════════════════
+   LOADING & BANNERS
+══════════════════════════════════════ */
+.ob-loading-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 20px;
+}
+
+.ob-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(103, 232, 249, 0.1);
+  border-top-color: var(--cyan);
+  border-radius: 50%;
+  animation: ob-spin 1s linear infinite;
+}
+
+@keyframes ob-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ob-loading-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.ob-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.ob-banner-icon {
+  font-size: 18px;
+}
+
+.ob-banner-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ob-banner-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  width: 100%;
+  margin-top: 4px;
+  margin-left: 30px;
+}
+
+.ob-banner-success {
+  background: rgba(74, 222, 128, 0.1);
+  border: 1px solid rgba(74, 222, 128, 0.28);
+}
+
+.ob-banner-warn {
+  background: rgba(250, 204, 21, 0.1);
+  border: 1px solid rgba(250, 204, 21, 0.28);
+}
+
+.ob-banner-error {
+  background: rgba(251, 113, 133, 0.1);
+  border: 1px solid rgba(251, 113, 133, 0.28);
 }
 
 /* ══════════════════════════════════════

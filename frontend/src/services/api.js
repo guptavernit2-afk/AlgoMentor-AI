@@ -7,6 +7,10 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
+// ─── User Identity ───────────────────────────────────────────────────────────
+// Hardcoded for Commit #2. Replace with real auth in a future milestone.
+export const DEMO_USER_ID = 'demo-user';
+
 /**
  * Generic fetch wrapper for API requests.
  * @param {string} endpoint - The API endpoint starting with '/' (e.g., '/health')
@@ -35,7 +39,9 @@ export async function apiFetch(endpoint, options = {}) {
         if (!response.ok) {
             // Throw an error with the details from the backend if possible
             const errorMessage = data?.detail || response.statusText || 'Unknown API Error';
-            throw new Error(`API Error ${response.status}: ${errorMessage}`);
+            const err = new Error(`API Error ${response.status}: ${errorMessage}`);
+            err.status = response.status;
+            throw err;
         }
 
         return data;
@@ -58,3 +64,33 @@ export async function checkBackendHealth() {
         return false;
     }
 }
+
+// ─── Profile API ─────────────────────────────────────────────────────────────
+
+/**
+ * Fetch the saved StudentProfile for a user.
+ *
+ * Returns the full StudentProfileResponse object on success.
+ * Throws with err.status === 404 when no profile exists yet.
+ *
+ * @param {string} userId
+ * @returns {Promise<object>} StudentProfileResponse
+ */
+export async function getProfile(userId) {
+    return apiFetch(`/api/users/${userId}/profile`);
+}
+
+/**
+ * Save (create or replace) a StudentProfile for a user.
+ *
+ * @param {string} userId
+ * @param {object} profile - Shape matching backend StudentProfile model
+ * @returns {Promise<object>} StudentProfileResponse
+ */
+export async function saveProfile(userId, profile) {
+    return apiFetch(`/api/users/${userId}/profile`, {
+        method: 'PUT',
+        body: JSON.stringify(profile),
+    });
+}
+

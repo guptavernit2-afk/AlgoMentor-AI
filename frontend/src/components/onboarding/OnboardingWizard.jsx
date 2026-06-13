@@ -3,15 +3,25 @@
  *
  * Root controller for the 4-step onboarding flow.
  * Owns all wizard state and renders the active step component.
- * State shape is designed to match StudentProfile + WeeklySchedule
- * backend models for zero-friction future API integration.
+ *
+ * Commit #2 — Profile Persistence Integration
+ *   • On mount: GET /api/users/{userId}/profile
+ *     - 200 → populate form with saved data
+ *     - 404 → keep defaults (first-time user)
+ *     - other → show friendly error, keep defaults
+ *   • On confirm: PUT /api/users/{userId}/profile
+ *     - 200 → show success banner
+ *     - 422/400 → show validation error
+ *     - 503 → show backend unavailable message
+ *     - network → show connection error
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import StepProfile from "./StepProfile";
 import StepLearning from "./StepLearning";
 import StepSchedule from "./StepSchedule";
 import StepReview from "./StepReview";
+import { getProfile, saveProfile, DEMO_USER_ID } from "../../services/api";
 import "./onboarding.css";
 
 // ─── Default wizard state ───────────────────────────────────────────────────
@@ -60,11 +70,109 @@ const STEP_LABELS = [
   "Review",
 ];
 
+// ─── Error → human-readable message ────────────────────────────────────────
+
+function toUserMessage(error, context) {
+  const status = error?.status;
+  if (status === 404) return null; // expected — first-time user, not an error
+  if (status === 422 || status === 400) {
+    return `Validation error: ${error.message.replace(/^API Error \d+: /, "")}`;
+  }
+  if (status === 503) {
+    return "Backend is temporarily unavailable. Please try again in a moment.";
+  }
+  if (!navigator.onLine || error.message?.includes("fetch")) {
+    return "Cannot reach the server. Check your internet connection.";
+  }
+  return `Something went wrong${context ? ` while ${context}` : ""}. Please try again.`;
+}
+
+// ─── Profile API ↔ Wizard state bridge ─────────────────────────────────────
+
+/** Map a backend StudentProfile object onto the wizard's flat state. */
+function profileToWizardState(profile) {
+  return {
+    name: profile.name ?? "",
+    goal: profile.goal ?? "Placement Prep",
+    preferred_study_time: profile.preferred_study_time ?? "Evening",
+    minimum_daily_minutes: profile.minimum_daily_minutes ?? 30,
+    maximum_daily_minutes: profile.maximum_daily_minutes ?? 120,
+    current_topic: profile.current_topic ?? "",
+    completed_topics_raw: (profile.completed_topics ?? []).join(", "),
+    weak_concepts_raw: (profile.weak_concepts ?? []).join(", "),
+  };
+}
+
+/** Build the backend StudentProfile payload from the wizard's flat state. */
+function wizardStateToProfile(data) {
+  return {
+    name: data.name.trim(),
+    goal: data.goal,
+    preferred_study_time: data.preferred_study_time,
+    minimum_daily_minutes: Number(data.minimum_daily_minutes),
+    maximum_daily_minutes: Number(data.maximum_daily_minutes),
+    current_topic: data.current_topic.trim(),
+    completed_topics: data.completed_topics_raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+    weak_concepts: data.weak_concepts_raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  };
+}
+
+// ─── Component ──────────────────────────────────────────────────────────────
+
 export default function OnboardingWizard() {
   const [step, setStep] = useState(0); // 0-indexed
   const [data, setData] = useState(INITIAL_STATE);
 
-  // Partial-update helper — keeps all other keys intact
+  // ── Async UI states ──────────────────────────────────────────────────────
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [loadError, setLoadError] = useState(null);   // friendly string | null
+  const [saveError, setSaveError] = useState(null);   // friendly string | null
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // ── Load existing profile on mount ──────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProfile() {
+      setIsLoadingProfile(true);
+      setLoadError(null);
+      try {
+        const res = await getProfile(DEMO_USER_ID);
+        if (!cancelled && res?.profile) {
+          // Merge saved profile into wizard state; preserve schedule defaults
+          setData((prev) => ({
+            ...prev,
+            ...profileToWizardState(res.profile),
+          }));
+          console.log("[AlgoMentor] Loaded profile from backend:", res.profile);
+        }
+      } catch (err) {
+        if (cancelled) return;
+        if (err?.status === 404) {
+          // Expected for first-time users — keep defaults, no error shown
+          console.log("[AlgoMentor] No existing profile — using defaults.");
+        } else {
+          const msg = toUserMessage(err, "loading your profile");
+          setLoadError(msg);
+          console.warn("[AlgoMentor] Profile load failed:", err.message);
+        }
+      } finally {
+        if (!cancelled) setIsLoadingProfile(false);
+      }
+    }
+
+    loadProfile();
+    return () => { cancelled = true; };
+  }, []);
+
+  // ── Partial-update helper ────────────────────────────────────────────────
   function update(patch) {
     setData((prev) => ({ ...prev, ...patch }));
   }
@@ -77,35 +185,53 @@ export default function OnboardingWizard() {
     setStep((s) => Math.max(s - 1, 0));
   }
 
-  function handleConfirm() {
-    // Build the final payload matching backend models
-    const payload = {
-      profile: {
-        name: data.name.trim(),
-        goal: data.goal,
-        preferred_study_time: data.preferred_study_time,
-        minimum_daily_minutes: Number(data.minimum_daily_minutes),
-        maximum_daily_minutes: Number(data.maximum_daily_minutes),
-        current_topic: data.current_topic.trim(),
-        completed_topics: data.completed_topics_raw
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
-        weak_concepts: data.weak_concepts_raw
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
-      },
-      weekly_schedule: {
-        days: data.days,
-      },
-    };
+  // ── Save profile on confirm ──────────────────────────────────────────────
+  async function handleConfirm() {
+    if (isSavingProfile) return;
 
-    // Phase 1 — local only. API call goes here in Commit #2.
-    console.log("[AlgoMentor] Onboarding payload:", payload);
+    setSaveError(null);
+    setSaveSuccess(false);
+    setIsSavingProfile(true);
+
+    const profile = wizardStateToProfile(data);
+
+    try {
+      const res = await saveProfile(DEMO_USER_ID, profile);
+      setSaveSuccess(true);
+      console.log("[AlgoMentor] Profile saved successfully:", res);
+    } catch (err) {
+      const msg = toUserMessage(err, "saving your profile");
+      setSaveError(msg);
+      console.error("[AlgoMentor] Profile save failed:", err.message);
+    } finally {
+      setIsSavingProfile(false);
+    }
   }
 
   const totalSteps = STEP_LABELS.length;
+
+  // ── Loading skeleton (profile fetch in progress) ─────────────────────────
+  if (isLoadingProfile) {
+    return (
+      <div className="ob-root">
+        <nav className="top-nav">
+          <div className="nav-logo">
+            <span className="nav-logo-icon">⬡</span>
+            <span className="nav-logo-text">
+              AlgoMentor<span className="nav-logo-accent"> AI</span>
+            </span>
+            <span className="prototype-badge">SETUP</span>
+          </div>
+        </nav>
+        <main className="ob-shell">
+          <div className="ob-card ob-loading-card">
+            <div className="ob-loading-spinner" />
+            <p className="ob-loading-text">Loading your profile…</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="ob-root">
@@ -145,6 +271,18 @@ export default function OnboardingWizard() {
 
       {/* ── Wizard body ── */}
       <main className="ob-shell">
+
+        {/* ── Load error banner (non-fatal: form still usable) ── */}
+        {loadError && (
+          <div className="ob-banner ob-banner-warn" role="alert">
+            <span className="ob-banner-icon">⚠️</span>
+            <span className="ob-banner-text">{loadError}</span>
+            <span className="ob-banner-sub">
+              Using default values — your changes will still save normally.
+            </span>
+          </div>
+        )}
+
         {/* Progress bar */}
         <div className="ob-progress-track">
           <div
@@ -175,10 +313,20 @@ export default function OnboardingWizard() {
             />
           )}
           {step === 3 && (
-            <StepReview data={data} onBack={back} onConfirm={handleConfirm} />
+            <StepReview
+              data={data}
+              onBack={back}
+              onConfirm={handleConfirm}
+              isSaving={isSavingProfile}
+              saveError={saveError}
+              saveSuccess={saveSuccess}
+            />
           )}
         </div>
       </main>
     </div>
   );
 }
+
+
+
