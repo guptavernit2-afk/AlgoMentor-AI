@@ -1,6 +1,12 @@
 import { useMemo, useState, useEffect } from "react";
 import { checkBackendHealth } from "./services/api";
 import "./App.css";
+import OnboardingWizard from "./components/onboarding/OnboardingWizard";
+
+// ─── Onboarding gate ─────────────────────────────────────────────────────────
+// Set to true once the user has completed onboarding.
+// Commit #2 will replace this with a real persistence check.
+const HAS_COMPLETED_ONBOARDING = false;
 
 const topics = [
   {
@@ -328,6 +334,11 @@ function App() {
         setReminderStatus("Blocked");
       }
     });
+  }
+
+  // ── Onboarding gate: show wizard until setup is complete ──────────────────
+  if (!HAS_COMPLETED_ONBOARDING) {
+    return <OnboardingWizard />;
   }
 
   return (
