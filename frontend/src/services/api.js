@@ -94,3 +94,32 @@ export async function saveProfile(userId, profile) {
     });
 }
 
+// ─── Schedule API ────────────────────────────────────────────────────────────
+
+/**
+ * Fetch the saved WeeklySchedule for a user.
+ *
+ * Returns the full WeeklyScheduleResponse object on success.
+ * Throws with err.status === 404 when no schedule exists yet.
+ *
+ * @param {string} userId
+ * @returns {Promise<object>} WeeklyScheduleResponse
+ */
+export async function getWeeklySchedule(userId) {
+    return apiFetch(`/api/users/${userId}/weekly-schedule`);
+}
+
+/**
+ * Save (create or replace) a WeeklySchedule for a user.
+ *
+ * @param {string} userId
+ * @param {object} schedule - Shape matching backend WeeklySchedule model
+ * @returns {Promise<object>} WeeklyScheduleResponse
+ */
+export async function saveWeeklySchedule(userId, schedule) {
+    return apiFetch(`/api/users/${userId}/weekly-schedule`, {
+        method: 'PUT',
+        body: JSON.stringify(schedule),
+    });
+}
+

@@ -21,7 +21,13 @@ import StepProfile from "./StepProfile";
 import StepLearning from "./StepLearning";
 import StepSchedule from "./StepSchedule";
 import StepReview from "./StepReview";
-import { getProfile, saveProfile, DEMO_USER_ID } from "../../services/api";
+import {
+  getProfile,
+  saveProfile,
+  getWeeklySchedule,
+  saveWeeklySchedule,
+  DEMO_USER_ID,
+} from "../../services/api";
 import "./onboarding.css";
 
 // ─── Default wizard state ───────────────────────────────────────────────────
@@ -136,17 +142,18 @@ export default function OnboardingWizard() {
   const [saveError, setSaveError] = useState(null);   // friendly string | null
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // ── Load existing profile on mount ──────────────────────────────────────
+  // ── Load existing data on mount ─────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
 
-    async function loadProfile() {
+    async function loadData() {
       setIsLoadingProfile(true);
       setLoadError(null);
+      
+      // Load Profile
       try {
         const res = await getProfile(DEMO_USER_ID);
         if (!cancelled && res?.profile) {
-          // Merge saved profile into wizard state; preserve schedule defaults
           setData((prev) => ({
             ...prev,
             ...profileToWizardState(res.profile),
@@ -156,20 +163,44 @@ export default function OnboardingWizard() {
       } catch (err) {
         if (cancelled) return;
         if (err?.status === 404) {
-          // Expected for first-time users — keep defaults, no error shown
           console.log("[AlgoMentor] No existing profile — using defaults.");
         } else {
-          const msg = toUserMessage(err, "loading your profile");
-          setLoadError(msg);
+          setLoadError(toUserMessage(err, "loading your profile"));
           console.warn("[AlgoMentor] Profile load failed:", err.message);
         }
-      } finally {
-        if (!cancelled) setIsLoadingProfile(false);
       }
+
+      // Load Schedule
+      try {
+        const res = await getWeeklySchedule(DEMO_USER_ID);
+        if (!cancelled && res?.schedule?.days) {
+          setData((prev) => ({
+            ...prev,
+            days: res.schedule.days,
+          }));
+          console.log("[AlgoMentor] Loaded schedule from backend:", res.schedule);
+        }
+      } catch (err) {
+        if (cancelled) return;
+        if (err?.status === 404) {
+          console.log("[AlgoMentor] No existing schedule — using defaults.");
+        } else {
+          setLoadError((prev) =>
+            prev
+              ? `${prev} | ${toUserMessage(err, "loading your schedule")}`
+              : toUserMessage(err, "loading your schedule")
+          );
+          console.warn("[AlgoMentor] Schedule load failed:", err.message);
+        }
+      }
+
+      if (!cancelled) setIsLoadingProfile(false);
     }
 
-    loadProfile();
-    return () => { cancelled = true; };
+    loadData();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // ── Partial-update helper ────────────────────────────────────────────────
@@ -185,7 +216,7 @@ export default function OnboardingWizard() {
     setStep((s) => Math.max(s - 1, 0));
   }
 
-  // ── Save profile on confirm ──────────────────────────────────────────────
+  // ── Save data on confirm ─────────────────────────────────────────────────
   async function handleConfirm() {
     if (isSavingProfile) return;
 
@@ -194,15 +225,18 @@ export default function OnboardingWizard() {
     setIsSavingProfile(true);
 
     const profile = wizardStateToProfile(data);
+    const schedule = { days: data.days };
 
     try {
-      const res = await saveProfile(DEMO_USER_ID, profile);
+      await saveProfile(DEMO_USER_ID, profile);
+      await saveWeeklySchedule(DEMO_USER_ID, schedule);
+      
       setSaveSuccess(true);
-      console.log("[AlgoMentor] Profile saved successfully:", res);
+      console.log("[AlgoMentor] Profile and schedule saved successfully");
     } catch (err) {
-      const msg = toUserMessage(err, "saving your profile");
+      const msg = toUserMessage(err, "saving your setup");
       setSaveError(msg);
-      console.error("[AlgoMentor] Profile save failed:", err.message);
+      console.error("[AlgoMentor] Save failed:", err.message);
     } finally {
       setIsSavingProfile(false);
     }
@@ -226,7 +260,7 @@ export default function OnboardingWizard() {
         <main className="ob-shell">
           <div className="ob-card ob-loading-card">
             <div className="ob-loading-spinner" />
-            <p className="ob-loading-text">Loading your profile…</p>
+            <p className="ob-loading-text">Loading your setup…</p>
           </div>
         </main>
       </div>
