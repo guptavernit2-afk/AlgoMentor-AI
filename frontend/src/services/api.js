@@ -123,3 +123,46 @@ export async function saveWeeklySchedule(userId, schedule) {
     });
 }
 
+// ─── Daily Override API ───────────────────────────────────────────────────────
+
+/**
+ * Fetch a saved DailyOverride for a specific date.
+ *
+ * Returns the full DailyOverrideResponse object on success.
+ * Throws with err.status === 404 when no override exists for that date.
+ *
+ * @param {string} userId
+ * @param {string} date - ISO date string (e.g. '2026-06-17')
+ * @returns {Promise<object>} DailyOverrideResponse
+ */
+export async function getDailyOverride(userId, date) {
+    return apiFetch(`/api/users/${userId}/daily-overrides/${date}`);
+}
+
+/**
+ * Save (create or replace) a DailyOverride for a specific date.
+ *
+ * @param {string} userId
+ * @param {string} date - ISO date string (e.g. '2026-06-17')
+ * @param {object} override - Shape matching backend DailyOverride model
+ * @returns {Promise<object>} DailyOverrideResponse
+ */
+export async function saveDailyOverride(userId, date, override) {
+    return apiFetch(`/api/users/${userId}/daily-overrides/${date}`, {
+        method: 'PUT',
+        body: JSON.stringify(override),
+    });
+}
+
+/**
+ * Delete a saved DailyOverride for a specific date.
+ *
+ * @param {string} userId
+ * @param {string} date - ISO date string (e.g. '2026-06-17')
+ * @returns {Promise<object>} DailyOverrideDeleteResponse
+ */
+export async function deleteDailyOverride(userId, date) {
+    return apiFetch(`/api/users/${userId}/daily-overrides/${date}`, {
+        method: 'DELETE',
+    });
+}

@@ -131,7 +131,7 @@ function wizardStateToProfile(data) {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export default function OnboardingWizard() {
+export default function OnboardingWizard({ onComplete } = {}) {
   const [step, setStep] = useState(0); // 0-indexed
   const [data, setData] = useState(INITIAL_STATE);
 
@@ -233,6 +233,10 @@ export default function OnboardingWizard() {
       
       setSaveSuccess(true);
       console.log("[AlgoMentor] Profile and schedule saved successfully");
+      // Notify App.jsx: onboarding is complete — transition to dashboard immediately
+      if (typeof onComplete === 'function') {
+        onComplete();
+      }
     } catch (err) {
       const msg = toUserMessage(err, "saving your setup");
       setSaveError(msg);

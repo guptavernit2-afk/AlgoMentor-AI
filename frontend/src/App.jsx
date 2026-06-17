@@ -1,12 +1,14 @@
 import { useMemo, useState, useEffect } from "react";
-import { checkBackendHealth } from "./services/api";
+import { checkBackendHealth, getProfile, DEMO_USER_ID } from "./services/api";
 import "./App.css";
 import OnboardingWizard from "./components/onboarding/OnboardingWizard";
+import DailyOverridePanel from "./components/DailyOverridePanel";
 
 // ─── Onboarding gate ─────────────────────────────────────────────────────────
-// Set to true once the user has completed onboarding.
-// Commit #2 will replace this with a real persistence check.
-const HAS_COMPLETED_ONBOARDING = false;
+// Runtime check: GET profile on mount.
+//   200 → profile exists → onboarding complete → show dashboard
+//   404 → no profile   → first-time user       → show wizard
+// Replaced hardcoded flag (Commit #4).
 
 const topics = [
   {
@@ -265,6 +267,33 @@ function App() {
     });
   }, []);
 
+  // ── Onboarding status ──────────────────────────────────────────────────────
+  // 'checking' → loading  |  'required' → wizard  |  'complete' → dashboard
+  const [onboardingStatus, setOnboardingStatus] = useState('checking');
+
+  useEffect(() => {
+    let cancelled = false;
+    getProfile(DEMO_USER_ID)
+      .then(() => {
+        // Profile exists — existing user, skip onboarding
+        if (!cancelled) setOnboardingStatus('complete');
+        console.log('[AlgoMentor] Existing profile found — skipping onboarding.');
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        if (err?.status === 404) {
+          // Expected for first-time users
+          setOnboardingStatus('required');
+          console.log('[AlgoMentor] No profile found — onboarding required.');
+        } else {
+          // Network / server error: don't lock the user out; show wizard as safe fallback
+          setOnboardingStatus('required');
+          console.warn('[AlgoMentor] Profile check failed — defaulting to onboarding.', err.message);
+        }
+      });
+    return () => { cancelled = true; };
+  }, []);
+
   const [collegeSchedule, setCollegeSchedule] = useState("9 AM - 4 PM");
   const [availableTime, setAvailableTime] = useState("1 hour");
   const [workload, setWorkload] = useState("Medium");
@@ -336,10 +365,36 @@ function App() {
     });
   }
 
-  // ── Onboarding gate: show wizard until setup is complete ──────────────────
-  if (!HAS_COMPLETED_ONBOARDING) {
-    return <OnboardingWizard />;
+  // ── Onboarding gate ────────────────────────────────────────────────────────
+  if (onboardingStatus === 'checking') {
+    // Profile check in-flight — show minimal loading card
+    return (
+      <div className="app-root">
+        <nav className="top-nav">
+          <div className="nav-logo">
+            <span className="nav-logo-icon">⬡</span>
+            <span className="nav-logo-text">AlgoMentor<span className="nav-logo-accent"> AI</span></span>
+            <span className="prototype-badge">LOADING</span>
+          </div>
+        </nav>
+        <main
+          className="app-shell"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}
+        >
+          <p style={{ color: 'rgba(148, 163, 184, 0.55)', fontSize: '0.88rem', letterSpacing: '0.04em' }}>
+            Checking your profile…
+          </p>
+        </main>
+      </div>
+    );
   }
+
+  if (onboardingStatus === 'required') {
+    // First-time user — run the wizard; callback flips status without reload
+    return <OnboardingWizard onComplete={() => setOnboardingStatus('complete')} />;
+  }
+
+  // onboardingStatus === 'complete' — fall through to full dashboard
 
   return (
     <div className="app-root">
@@ -532,6 +587,9 @@ function App() {
             </div>
           </div>
         </section>
+
+        {/* ── Daily Override ── */}
+        <DailyOverridePanel />
 
         {/* ── Stats Grid ── */}
         <section className="stats-grid">

@@ -1,0 +1,195 @@
+/**
+ * DailyOverridePanel.css
+ *
+ * Styles for DailyOverridePanel.jsx — Commit #4 Daily Override Persistence.
+ *
+ * Layout and colours follow App.css conventions so the panel blends
+ * seamlessly into the existing dashboard.
+ *
+ * Re-used from App.css (no redefinition needed here):
+ *   .section-head, .eyebrow, .setup-card, .setup-icon, .setup-helper,
+ *   .live-pill, .live-dot, .section-helper
+ *
+ * New classes are all prefixed  do-  to avoid collisions.
+ */
+
+/* ── Panel container ─────────────────────────────────────────────────────────── */
+
+.do-panel {
+  background: var(--card-bg, rgba(15, 23, 42, 0.85));
+  border: 1px solid var(--border, rgba(99, 102, 241, 0.15));
+  border-radius: 16px;
+  padding: 2rem 2.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  backdrop-filter: blur(12px);
+}
+
+/* ── Form grid ───────────────────────────────────────────────────────────────── */
+
+.do-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+/* Full-width card (date selector, note) */
+.do-card-full {
+  grid-column: 1 / -1;
+}
+
+/* ── Loading hint ────────────────────────────────────────────────────────────── */
+
+.do-loading-hint {
+  font-size: 0.72rem;
+  color: rgba(148, 163, 184, 0.7);
+  margin-top: 0.35rem;
+  display: block;
+  letter-spacing: 0.02em;
+}
+
+/* ── Optional tag ────────────────────────────────────────────────────────────── */
+
+.do-optional-tag {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: rgba(148, 163, 184, 0.6);
+  background: rgba(148, 163, 184, 0.1);
+  border-radius: 4px;
+  padding: 0.1em 0.45em;
+  margin-left: 0.4em;
+  vertical-align: middle;
+}
+
+/* ── Action row ──────────────────────────────────────────────────────────────── */
+
+.do-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.do-btn {
+  padding: 0.6rem 1.4rem;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+.do-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.do-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.do-btn:not(:disabled):active {
+  transform: translateY(0);
+}
+
+/* Primary — Save */
+.do-btn-primary {
+  background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.35);
+}
+
+.do-btn-primary:not(:disabled):hover {
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.5);
+}
+
+/* Danger — Delete */
+.do-btn-danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.do-btn-danger:not(:disabled):hover {
+  background: rgba(239, 68, 68, 0.2);
+  box-shadow: 0 2px 12px rgba(239, 68, 68, 0.2);
+}
+
+/* ── Banners ─────────────────────────────────────────────────────────────────── */
+
+.do-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.9rem 1.2rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  border: 1px solid transparent;
+  animation: do-banner-slide-in 0.25s ease;
+}
+
+@keyframes do-banner-slide-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.do-banner-icon {
+  font-size: 1rem;
+  margin-bottom: 0.1rem;
+}
+
+.do-banner-text {
+  font-weight: 600;
+  color: inherit;
+}
+
+.do-banner-sub {
+  font-size: 0.76rem;
+  opacity: 0.75;
+}
+
+/* Success */
+.do-banner-success {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.25);
+  color: #4ade80;
+}
+
+/* Warning (load error — non-fatal) */
+.do-banner-warn {
+  background: rgba(234, 179, 8, 0.08);
+  border-color: rgba(234, 179, 8, 0.25);
+  color: #facc15;
+}
+
+/* Error (save / delete failure) */
+.do-banner-error {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: #f87171;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .do-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .do-panel {
+    padding: 1.4rem 1.2rem;
+  }
+
+  .do-actions {
+    flex-direction: column;
+  }
+
+  .do-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
