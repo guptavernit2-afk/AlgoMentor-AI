@@ -3,6 +3,7 @@ import { checkBackendHealth, getProfile, DEMO_USER_ID } from "./services/api";
 import "./App.css";
 import OnboardingWizard from "./components/onboarding/OnboardingWizard";
 import DailyOverridePanel from "./components/DailyOverridePanel";
+import SmartDailyPlanPanel from "./components/SmartDailyPlanPanel";
 
 // ─── Onboarding gate ─────────────────────────────────────────────────────────
 // Runtime check: GET profile on mount.
@@ -590,6 +591,9 @@ function App() {
 
         {/* ── Daily Override ── */}
         <DailyOverridePanel />
+
+        {/* ── Smart Daily Plan ── */}
+        <SmartDailyPlanPanel />
 
         {/* ── Stats Grid ── */}
         <section className="stats-grid">

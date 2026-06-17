@@ -1,0 +1,297 @@
+/**
+ * SmartDailyPlanPanel.css
+ * 
+ * Styles for SmartDailyPlanPanel.jsx
+ */
+
+.sdp-panel {
+  background: var(--card-bg, rgba(15, 23, 42, 0.85));
+  border: 1px solid var(--border, rgba(99, 102, 241, 0.15));
+  border-radius: 16px;
+  padding: 2rem 2.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  backdrop-filter: blur(12px);
+  margin-top: 2rem;
+}
+
+.sdp-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sdp-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sdp-day-name {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.sdp-meta {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.sdp-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  letter-spacing: 0.02em;
+}
+
+.sdp-badge-intensity-Rest { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
+.sdp-badge-intensity-Light { background: rgba(56, 189, 248, 0.15); color: #7dd3fc; }
+.sdp-badge-intensity-Balanced { background: rgba(168, 85, 247, 0.15); color: #d8b4fe; }
+.sdp-badge-intensity-Deep { background: rgba(244, 63, 94, 0.15); color: #fda4af; }
+
+.sdp-badge-override {
+  background: rgba(234, 179, 8, 0.15);
+  color: #fde047;
+}
+
+.sdp-plan-reason {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: rgba(148, 163, 184, 0.8);
+  margin-top: 0.5rem;
+}
+
+/* ── Date Picker ── */
+.sdp-date-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sdp-date-picker input[type="date"] {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #fff;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.sdp-loading-hint {
+  font-size: 0.72rem;
+  color: rgba(148, 163, 184, 0.7);
+  letter-spacing: 0.02em;
+}
+
+/* ── Banners ── */
+.sdp-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.9rem 1.2rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  border: 1px solid transparent;
+  animation: sdp-banner-slide-in 0.25s ease;
+}
+
+@keyframes sdp-banner-slide-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.sdp-banner-icon { font-size: 1rem; margin-bottom: 0.1rem; }
+.sdp-banner-text { font-weight: 600; color: inherit; }
+.sdp-banner-sub { font-size: 0.76rem; opacity: 0.75; }
+
+.sdp-banner-warn {
+  background: rgba(234, 179, 8, 0.08);
+  border-color: rgba(234, 179, 8, 0.25);
+  color: #facc15;
+}
+
+.sdp-banner-error {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: #f87171;
+}
+
+/* ── Revision Focus Banner ── */
+.sdp-revision-banner {
+  background: rgba(56, 189, 248, 0.05);
+  border-left: 3px solid #38bdf8;
+  padding: 1rem;
+  border-radius: 0 8px 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.sdp-revision-banner strong {
+  color: #bae6fd;
+  font-size: 0.9rem;
+}
+
+.sdp-revision-banner p {
+  color: rgba(186, 230, 253, 0.8);
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+/* ── Section Titles ── */
+.sdp-section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ── Task Cards ── */
+.sdp-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sdp-task-card {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sdp-task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.sdp-task-title {
+  font-weight: 600;
+  color: #f8fafc;
+  font-size: 0.9rem;
+}
+
+.sdp-task-meta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.sdp-task-reason {
+  font-size: 0.8rem;
+  color: rgba(148, 163, 184, 0.85);
+  margin: 0;
+}
+
+/* ── Problem Cards ── */
+.sdp-problem-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sdp-problem-card {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.sdp-problem-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sdp-problem-title {
+  font-weight: 600;
+  color: #f8fafc;
+  font-size: 0.95rem;
+}
+
+.sdp-problem-difficulty {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.sdp-diff-Easy { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+.sdp-diff-Medium { background: rgba(234, 179, 8, 0.15); color: #facc15; }
+.sdp-diff-Hard { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+
+.sdp-problem-reason {
+  font-size: 0.82rem;
+  color: rgba(148, 163, 184, 0.85);
+  margin: 0;
+}
+
+.sdp-problem-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+}
+
+.sdp-problem-score {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.sdp-problem-score-bar-bg {
+  width: 60px;
+  height: 4px;
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.sdp-problem-score-bar-fill {
+  height: 100%;
+  background: #6366f1;
+}
+
+.sdp-problem-link {
+  font-size: 0.75rem;
+  color: #818cf8;
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.sdp-problem-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .sdp-header-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+}

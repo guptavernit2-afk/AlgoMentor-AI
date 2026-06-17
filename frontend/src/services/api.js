@@ -166,3 +166,16 @@ export async function deleteDailyOverride(userId, date) {
         method: 'DELETE',
     });
 }
+
+// ─── Smart Daily Plan API ─────────────────────────────────────────────────────
+
+/**
+ * Generate and fetch a Smart Daily Plan for a specific date.
+ *
+ * @param {string} userId
+ * @param {string} date - ISO date string (e.g. '2026-06-17')
+ * @returns {Promise<object>} DailyPlanResponse
+ */
+export async function getDailyPlan(userId, date) {
+    return apiFetch(`/api/users/${userId}/daily-plan/${date}`);
+}
