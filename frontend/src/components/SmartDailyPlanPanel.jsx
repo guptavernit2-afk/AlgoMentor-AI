@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getDailyPlan, DEMO_USER_ID } from "../services/api";
-import "./SmartDailyPlanPanel.css";
 
-/** Returns today's date as a YYYY-MM-DD string in local time. */
 function todayISO() {
   const d = new Date();
   const yyyy = d.getFullYear();
@@ -11,179 +9,147 @@ function todayISO() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-/** Mirror of DailyOverridePanel's toUserMessage. */
-function toUserMessage(error, context) {
-  const status = error?.status;
-  if (status === 404) {
-    return "No plan exists for this date. (Profile or schedule missing)";
-  }
-  if (status === 422 || status === 400) {
-    return `Validation error: ${error.message.replace(/^API Error \d+: /, "")}`;
-  }
-  if (status === 503) {
-    return "Backend is temporarily unavailable. Please try again in a moment.";
-  }
-  if (!navigator.onLine || error.message?.includes("fetch")) {
-    return "Cannot reach the server. Check your internet connection.";
-  }
-  return `Something went wrong${context ? ` while ${context}` : ""}. Please try again.`;
-}
-
-export default function SmartDailyPlanPanel() {
+export default function SmartDailyPlanPanel({ onProblemSelect }) {
   const [date, setDate] = useState(todayISO());
   const [plan, setPlan] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [errorBanner, setErrorBanner] = useState(null);
 
   const fetchPlan = useCallback(async (targetDate) => {
     setIsLoading(true);
-    setErrorBanner(null);
-    setPlan(null);
-
     try {
       const data = await getDailyPlan(DEMO_USER_ID, targetDate);
       setPlan(data);
     } catch (err) {
-      if (err.status === 404) {
-        // Handle 404 gracefully as "No plan setup" instead of a banner
-        setErrorBanner({
-          type: "warn",
-          title: "Setup Required",
-          sub: "Weekly schedule or profile is missing. Please complete setup first."
-        });
-      } else {
-        setErrorBanner({
-          type: "error",
-          title: "Failed to load plan",
-          sub: toUserMessage(err, "loading plan")
-        });
-      }
+      console.warn("Failed to fetch plan", err);
+      setPlan(null);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Fetch plan when date changes
-  useEffect(() => {
-    fetchPlan(date);
-  }, [date, fetchPlan]);
+  useEffect(() => { fetchPlan(date); }, [date, fetchPlan]);
 
   return (
-    <div className="sdp-panel">
-      <div className="sdp-header-top">
-        <h2 className="section-head" style={{ margin: 0 }}>Smart Daily Plan</h2>
-        <div className="sdp-date-picker">
-          {isLoading && <span className="sdp-loading-hint">Loading plan...</span>}
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
+    <div className="widget-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', height: '100%' }}>
+      
+      {/* ── Header ── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2 style={{ fontSize: '1.25rem', margin: 0, color: 'var(--text-primary)' }}>Smart Daily Plan</h2>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-dark)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-sm)', padding: '0.25rem 0.5rem', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{date.split('-').reverse().join('-')}</span>
+            <input 
+              type="date" 
+              value={date} 
+              onChange={e => setDate(e.target.value)}
+              style={{ background: 'transparent', border: 'none', color: 'transparent', width: '20px', cursor: 'pointer', outline: 'none' }}
+              title="Select Date"
+            />
+          </div>
+          <button onClick={() => fetchPlan(date)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-dark)', border: '1px solid var(--border-strong)', color: 'var(--text-primary)', padding: '0.4rem 0.75rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.8rem' }}>
+            Refresh ↻
+          </button>
         </div>
       </div>
 
-      {errorBanner && (
-        <div className={`sdp-banner sdp-banner-${errorBanner.type}`}>
-          <div className="sdp-banner-text">{errorBanner.title}</div>
-          <div className="sdp-banner-sub">{errorBanner.sub}</div>
-        </div>
-      )}
+      {isLoading && <p style={{ fontSize: '0.85rem', color: 'var(--accent-indigo)' }}>Optimizing plan...</p>}
 
       {plan && (
         <>
-          <div className="sdp-header">
-            <div className="sdp-header-top">
-              <span className="sdp-day-name">{plan.day_name}</span>
+          {/* ── Badges Row ── */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+            
+            <div style={{ flex: '1 1 auto', minWidth: '140px', background: 'var(--bg-dark)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-sm)', padding: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span style={{ fontSize: '1.25rem', color: 'var(--accent-blue)', background: 'rgba(59, 130, 246, 0.1)', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}>📅</span>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{plan.day_name}</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Day</span>
+              </div>
             </div>
-            <div className="sdp-meta">
-              <span className={`sdp-badge sdp-badge-intensity-${plan.plan_intensity}`}>
-                {plan.plan_intensity} Intensity
-              </span>
-              <span className="sdp-badge" style={{ background: 'rgba(255,255,255,0.1)', color: '#e2e8f0' }}>
-                {plan.derived_workload} Workload
-              </span>
-              <span className="sdp-badge" style={{ background: 'rgba(56, 189, 248, 0.1)', color: '#bae6fd' }}>
-                {plan.available_minutes} mins available
-              </span>
-              {plan.override_applied && (
-                <span className="sdp-badge sdp-badge-override">Override Applied</span>
-              )}
+
+            <div style={{ flex: '1 1 auto', minWidth: '140px', background: 'var(--bg-dark)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-sm)', padding: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span style={{ fontSize: '1.25rem', color: 'var(--accent-green)', background: 'rgba(16, 185, 129, 0.1)', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}>🌳</span>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{plan.plan_intensity}</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Intensity</span>
+              </div>
             </div>
-            <div className="sdp-plan-reason">{plan.plan_reason}</div>
-          </div>
 
-          <div className="sdp-revision-banner">
-            <strong>Revision Focus: {plan.revision_focus || "None"}</strong>
-            <p>{plan.revision_note}</p>
-          </div>
+            <div style={{ flex: '1 1 auto', minWidth: '140px', background: 'var(--bg-dark)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-sm)', padding: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span style={{ fontSize: '1.25rem', color: 'var(--accent-red)', background: 'rgba(239, 68, 68, 0.1)', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}>🎯</span>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{plan.derived_workload}</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Workload</span>
+              </div>
+            </div>
 
-          <div>
-            <h3 className="sdp-section-title">
-              <span>📅</span> Today's Tasks
-            </h3>
-            <div className="sdp-task-list">
-              {plan.tasks.map((task) => (
-                <div key={task.task_id} className="sdp-task-card">
-                  <div className="sdp-task-header">
-                    <span className="sdp-task-title">{task.title}</span>
-                    <span className="sdp-task-meta">
-                      {task.duration_minutes > 0 ? `${task.duration_minutes}m` : '0m'}
-                    </span>
-                  </div>
-                  <div className="sdp-task-meta" style={{ marginTop: '-0.2rem' }}>
-                    <span className="sdp-badge" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                      {task.task_type}
-                    </span>
-                    <span>• {task.topic}</span>
-                  </div>
-                  <p className="sdp-task-reason">{task.reason}</p>
+            <div style={{ flex: '1 1 auto', minWidth: '140px', background: 'var(--bg-dark)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-sm)', padding: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span style={{ fontSize: '1.25rem', color: 'var(--accent-green)', background: 'rgba(16, 185, 129, 0.1)', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}>✅</span>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{plan.available_minutes}</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Available Minutes</span>
+              </div>
+            </div>
+
+            {plan.override_applied && (
+              <div style={{ flex: '1 1 auto', minWidth: '160px', background: 'var(--bg-dark)', border: '1px solid var(--accent-orange)', borderRadius: 'var(--radius-sm)', padding: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ fontSize: '1.25rem', color: 'var(--accent-orange)', background: 'rgba(245, 158, 11, 0.1)', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}>⚡</span>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-orange)' }}>Override Applied</span>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Internal Exam / Test</span>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+            
           </div>
 
+          {/* ── Info Banner ── */}
+          <div style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#bae6fd', padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ background: 'var(--accent-blue)', color: '#fff', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', fontSize: '0.65rem', fontWeight: 'bold' }}>i</span>
+            Plan generated based on your profile, SM-2 revision data, and today's override.
+          </div>
+
+          {/* ── Plan Reason ── */}
           <div>
-            <h3 className="sdp-section-title">
-              <span>🎯</span> Recommended Problems
-            </h3>
-            <div className="sdp-problem-list">
-              {plan.recommended_problems.map((problem) => (
-                <div key={problem.id} className="sdp-problem-card">
-                  <div className="sdp-problem-header">
-                    <span className="sdp-problem-title">{problem.title}</span>
-                    <span className={`sdp-problem-difficulty sdp-diff-${problem.difficulty}`}>
-                      {problem.difficulty}
-                    </span>
-                  </div>
-                  <p className="sdp-problem-reason">{problem.reason}</p>
-                  
-                  <div className="sdp-problem-meta">
-                    <div className="sdp-problem-score">
-                      Match Score: {problem.match_score}%
-                      <div className="sdp-problem-score-bar-bg">
-                        <div 
-                          className="sdp-problem-score-bar-fill" 
-                          style={{ width: `${problem.match_score}%` }} 
-                        />
-                      </div>
+            <h4 style={{ fontSize: '0.9rem', margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Plan Reason</h4>
+            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              {plan.plan_reason}
+            </p>
+          </div>
+
+          {/* ── 2 Columns: Revision Focus & Today's Tasks ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginTop: '0.5rem', borderTop: '1px solid var(--border-light)', paddingTop: '1.5rem' }}>
+            
+            <div>
+              <h4 style={{ fontSize: '0.9rem', margin: '0 0 1rem 0', color: 'var(--text-primary)' }}>Revision Focus</h4>
+              <div style={{ background: 'var(--bg-dark)', border: '1px solid var(--border-strong)', padding: '1rem', borderRadius: 'var(--radius-sm)' }}>
+                <strong style={{ display: 'block', color: 'var(--accent-red)', marginBottom: '0.5rem', fontSize: '0.85rem' }}>{plan.revision_focus || "General Practice"}</strong>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{plan.revision_note}</p>
+              </div>
+            </div>
+
+            <div>
+              <h4 style={{ fontSize: '0.9rem', margin: '0 0 1rem 0', color: 'var(--text-primary)' }}>Today's Tasks ({plan.tasks.length})</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {plan.tasks.map((task, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', background: 'var(--bg-dark)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-strong)' }}>
+                    <div style={{ background: 'var(--bg-panel)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                      {task.duration_minutes}m
                     </div>
-                    {problem.leetcode_link && (
-                      <a 
-                        href={problem.leetcode_link} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="sdp-problem-link"
-                      >
-                        Solve ↗
-                      </a>
-                    )}
+                    <div>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>{task.title}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>{task.topic}</div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
+
           </div>
+
         </>
       )}
+      {!plan && !isLoading && <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>No plan available for this date.</p>}
     </div>
   );
 }
