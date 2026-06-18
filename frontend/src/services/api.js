@@ -179,3 +179,66 @@ export async function deleteDailyOverride(userId, date) {
 export async function getDailyPlan(userId, date) {
     return apiFetch(`/api/users/${userId}/daily-plan/${date}`);
 }
+
+// ─── SM-2 Revision API ────────────────────────────────────────────────────────
+
+/**
+ * Fetch the revision queue (due and upcoming topics) for a specific date.
+ *
+ * @param {string} userId
+ * @param {string} asOfDate - ISO date string
+ * @returns {Promise<object>} RevisionQueueResponse
+ */
+export async function getRevisionQueue(userId, asOfDate) {
+    return apiFetch(`/api/users/${userId}/revision-queue/${asOfDate}`);
+}
+
+/**
+ * Submit a topic review (recall quality 0-5) to update the SM-2 schedule.
+ *
+ * @param {string} userId
+ * @param {string} topic
+ * @param {number} quality - 0 (blackout) to 5 (perfect recall)
+ * @param {string} reviewedOn - ISO date string
+ * @returns {Promise<object>} TopicReviewResponse
+ */
+export async function submitTopicReview(userId, topic, quality, reviewedOn) {
+    return apiFetch(`/api/users/${userId}/revision-reviews`, {
+        method: 'POST',
+        body: JSON.stringify({
+            topic,
+            quality,
+            reviewed_on: reviewedOn
+        }),
+    });
+}
+
+// ─── Workspace IDE API ────────────────────────────────────────────────────────
+
+/**
+ * Fetch a recommended problem to solve in the IDE workspace.
+ *
+ * @returns {Promise<object>} Problem data
+ */
+export async function getWorkspaceProblem() {
+    return apiFetch(`/api/workspace/problems/recommendation`);
+}
+
+/**
+ * Submit user code to the AI mentor for evaluation.
+ *
+ * @param {string} problemId
+ * @param {string} code
+ * @param {string} language
+ * @returns {Promise<object>} EvaluateResponse
+ */
+export async function submitWorkspaceCode(problemId, code, language) {
+    return apiFetch(`/api/workspace/evaluate`, {
+        method: 'POST',
+        body: JSON.stringify({
+            problem_id: problemId,
+            code,
+            language
+        }),
+    });
+}

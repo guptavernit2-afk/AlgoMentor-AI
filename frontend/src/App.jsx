@@ -9,6 +9,7 @@ import ScheduleView from "./views/ScheduleView";
 import RevisionView from "./views/RevisionView";
 import AnalyticsView from "./views/AnalyticsView";
 import SettingsView from "./views/SettingsView";
+import WorkspaceView from "./views/WorkspaceView";
 
 function App() {
   const [activeView, setActiveView] = useState("dashboard");
@@ -51,6 +52,10 @@ function App() {
 
   if (onboardingStatus === 'required') {
     return <OnboardingWizard onComplete={() => setOnboardingStatus('complete')} />;
+  }
+
+  if (activeView === 'workspace') {
+    return <WorkspaceView setActiveView={setActiveView} />;
   }
 
   return (

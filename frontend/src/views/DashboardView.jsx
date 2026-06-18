@@ -1,48 +1,38 @@
 import React from 'react';
 import SmartDailyPlanPanel from '../components/SmartDailyPlanPanel';
+import SM2FeedbackWidget from '../components/SM2FeedbackWidget';
+import './DashboardView.css';
 
 export default function DashboardView({ setActiveView }) {
   return (
     <div className="layout-view layout-view-padded">
       
       {/* ── 1. Hero Section ── */}
-      <section style={{ 
-        display: 'flex', 
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        gap: '2rem',
-        background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.4), rgba(15, 23, 42, 0.6))',
-        border: '1px solid var(--border-light)',
-        borderRadius: 'var(--radius-xl)',
-        padding: '2rem',
-        position: 'relative',
-        overflow: 'hidden',
-        marginBottom: '1.5rem'
-      }}>
-        <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)', borderRadius: '50%' }} />
+      <section className="dashboard-hero">
+        <div className="dashboard-hero-glow" />
 
-        <div style={{ zIndex: 1, minWidth: '300px', flex: '1 1 400px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <p style={{ color: 'var(--accent-indigo)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
+        <div className="dashboard-hero-content">
+          <p className="dashboard-hero-eyebrow">
             AI + Spaced Revision For DSA
           </p>
-          <h1 style={{ fontSize: '2.5rem', margin: '0 0 1rem 0', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2 }}>
+          <h1 className="dashboard-hero-title">
             Welcome back,<br/>
-            <span style={{ color: 'var(--accent-indigo)' }}>Vernit</span> 👋
+            <span>Vernit</span> 👋
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '2rem' }}>
+          <p className="dashboard-hero-subtitle">
             Your intelligent study companion that adapts to your memory, schedule, and goals to help you master DSA consistently.
           </p>
           <div>
             <button 
               onClick={() => setActiveView('revision')}
-              style={{ background: 'var(--accent-indigo)', color: 'white', border: 'none', padding: '0.85rem 1.5rem', borderRadius: 'var(--radius-sm)', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', transition: 'background 0.2s', boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4)' }}
+              className="dashboard-hero-button"
             >
               View Today's Plan →
             </button>
           </div>
         </div>
 
-        <div style={{ zIndex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '280px', margin: '0 auto' }}>
+        <div className="dashboard-hero-visual">
           <div style={{ position: 'absolute', width: '220px', height: '220px', borderRadius: '50% 50% 10% 10%', border: '2px solid rgba(99, 102, 241, 0.3)', background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.05) 0%, rgba(99, 102, 241, 0.01) 100%)', boxShadow: 'inset 0 10px 30px rgba(99, 102, 241, 0.2), 0 0 40px rgba(99, 102, 241, 0.1)', top: '10%' }}></div>
           <div style={{ position: 'absolute', width: '260px', height: '10px', background: 'rgba(99, 102, 241, 0.2)', borderRadius: '50%', bottom: '15%', filter: 'blur(4px)' }}></div>
           <div style={{ position: 'absolute', width: '240px', height: '14px', border: '2px solid rgba(99, 102, 241, 0.4)', borderRadius: '50%', bottom: '15%' }}></div>
@@ -73,26 +63,26 @@ export default function DashboardView({ setActiveView }) {
       </section>
 
       {/* ── 2. KPI Cards ── */}
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+      <section className="dashboard-kpi-grid">
         {[
-          { label: 'Study Time Today', value: '120', unit: 'mins', icon: '⏱️', trend: '↑ 20% vs yesterday', color: 'var(--accent-green)', iconBg: 'rgba(59, 130, 246, 0.1)' },
-          { label: 'Problems Solved', value: '8', unit: 'problems', icon: '</>', trend: '↑ 33% vs yesterday', color: 'var(--accent-green)', iconBg: 'rgba(16, 185, 129, 0.1)' },
-          { label: 'Revision Accuracy', value: '64%', unit: '', icon: '🎯', trend: '↑ 8% vs last week', color: 'var(--accent-green)', iconBg: 'rgba(139, 92, 246, 0.1)' },
-          { label: 'Current Streak', value: '7', unit: 'days', icon: '🔥', trend: '🔥 Keep it going!', color: 'var(--accent-orange)', iconBg: 'rgba(245, 158, 11, 0.1)' }
+          { label: 'Study Time Today', value: '120', unit: 'mins', icon: '⏱️', trend: '↑ 20% vs yesterday', color: 'var(--accent-green, #4ade80)', iconBg: 'rgba(59, 130, 246, 0.1)' },
+          { label: 'Problems Solved', value: '8', unit: 'problems', icon: '</>', trend: '↑ 33% vs yesterday', color: 'var(--accent-green, #4ade80)', iconBg: 'rgba(16, 185, 129, 0.1)' },
+          { label: 'Revision Accuracy', value: '64%', unit: '', icon: '🎯', trend: '↑ 8% vs last week', color: 'var(--accent-green, #4ade80)', iconBg: 'rgba(139, 92, 246, 0.1)' },
+          { label: 'Current Streak', value: '7', unit: 'days', icon: '🔥', trend: '🔥 Keep it going!', color: 'var(--accent-orange, #f59e0b)', iconBg: 'rgba(245, 158, 11, 0.1)' }
         ].map((kpi, i) => (
-          <div key={i} className="widget-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
-              <div style={{ fontSize: '1.25rem', background: kpi.iconBg, width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}>
+          <div key={i} className="widget-card kpi-card">
+            <div className="kpi-header">
+              <div className="kpi-icon" style={{ background: kpi.iconBg }}>
                 {kpi.icon}
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>{kpi.label}</div>
-                <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
-                  {kpi.value} <span style={{ fontSize: '0.85rem', fontWeight: 400, color: 'var(--text-muted)' }}>{kpi.unit}</span>
+              <div className="kpi-info">
+                <div className="kpi-label">{kpi.label}</div>
+                <div className="kpi-value">
+                  {kpi.value} <span className="kpi-unit">{kpi.unit}</span>
                 </div>
               </div>
             </div>
-            <div style={{ fontSize: '0.75rem', fontWeight: 500, color: kpi.color, marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-light)' }}>
+            <div className="kpi-trend" style={{ color: kpi.color }}>
               {kpi.trend}
             </div>
           </div>
@@ -100,45 +90,17 @@ export default function DashboardView({ setActiveView }) {
       </section>
 
       {/* ── 3. Lower Grid (Smart Plan + Memory/Weakness) ── */}
-      <section style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem' }}>
+      <section className="dashboard-lower-grid">
         
         {/* Left Column: Smart Daily Plan Panel */}
-        <div style={{ flex: '1 1 600px', minWidth: 0 }}>
-          <SmartDailyPlanPanel />
+        <div className="dashboard-lower-left">
+          <SmartDailyPlanPanel onProblemSelect={() => setActiveView('workspace')} />
         </div>
 
         {/* Right Column: Widgets */}
-        <div style={{ flex: '1 1 300px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div className="dashboard-lower-right">
           
-          {/* Memory Health Widget */}
-          <div className="widget-card">
-            <div className="widget-header">
-              <h3 className="widget-title">Memory Health</h3>
-              <a className="widget-action">View Details →</a>
-            </div>
-            
-            <div className="circular-progress">
-              <svg viewBox="0 0 120 120">
-                <defs>
-                  <linearGradient id="memoryGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="var(--accent-orange)" />
-                    <stop offset="100%" stopColor="var(--accent-purple)" />
-                  </linearGradient>
-                </defs>
-                <circle className="progress-bg" cx="60" cy="60" r="50" />
-                <circle className="progress-value" cx="60" cy="60" r="50" />
-              </svg>
-              <div className="progress-text">
-                <span className="progress-percent">64%</span>
-                <span className="progress-label">Medium Risk</span>
-              </div>
-            </div>
-
-            <div className="memory-health-status">
-              <h4>Requires regular revision</h4>
-              <p>Focus on weak concepts</p>
-            </div>
-          </div>
+          <SM2FeedbackWidget />
 
           {/* Weak Concepts Widget */}
           <div className="widget-card" style={{ flex: 1 }}>

@@ -330,36 +330,71 @@ export default function OnboardingWizard({ onComplete } = {}) {
         </div>
 
         {/* Active step */}
-        <div className="ob-card">
-          {step === 0 && (
-            <StepProfile data={data} update={update} onNext={next} />
-          )}
-          {step === 1 && (
-            <StepLearning
-              data={data}
-              update={update}
-              onNext={next}
-              onBack={back}
-            />
-          )}
-          {step === 2 && (
-            <StepSchedule
-              data={data}
-              update={update}
-              onNext={next}
-              onBack={back}
-            />
-          )}
-          {step === 3 && (
-            <StepReview
-              data={data}
-              onBack={back}
-              onConfirm={handleConfirm}
-              isSaving={isSavingProfile}
-              saveError={saveError}
-              saveSuccess={saveSuccess}
-            />
-          )}
+        <div className="ob-card ob-card-layout">
+          
+          {/* Illustration Sidebar */}
+          <div className="ob-illustration">
+            {step === 0 && (
+              <>
+                <div style={{ fontSize: '4rem', marginBottom: '1rem', filter: 'drop-shadow(0 0 15px rgba(99, 102, 241, 0.4))' }}>👋</div>
+                <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Welcome!</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Let's get to know you and your goals.</p>
+              </>
+            )}
+            {step === 1 && (
+              <>
+                <div style={{ fontSize: '4rem', marginBottom: '1rem', filter: 'drop-shadow(0 0 15px rgba(168, 85, 247, 0.4))' }}>🧠</div>
+                <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Your Knowledge</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>We'll tailor problems to your current level.</p>
+              </>
+            )}
+            {step === 2 && (
+              <>
+                <div style={{ fontSize: '4rem', marginBottom: '1rem', filter: 'drop-shadow(0 0 15px rgba(34, 211, 238, 0.4))' }}>📅</div>
+                <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Your Time</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>We'll adapt your daily plan around your college schedule.</p>
+              </>
+            )}
+            {step === 3 && (
+              <>
+                <div style={{ fontSize: '4rem', marginBottom: '1rem', filter: 'drop-shadow(0 0 15px rgba(74, 222, 128, 0.4))' }}>🚀</div>
+                <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>All Set!</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Review your setup before we launch.</p>
+              </>
+            )}
+          </div>
+
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {step === 0 && (
+              <StepProfile data={data} update={update} onNext={next} />
+            )}
+            {step === 1 && (
+              <StepLearning
+                data={data}
+                update={update}
+                onNext={next}
+                onBack={back}
+              />
+            )}
+            {step === 2 && (
+              <StepSchedule
+                data={data}
+                update={update}
+                onNext={next}
+                onBack={back}
+              />
+            )}
+            {step === 3 && (
+              <StepReview
+                data={data}
+                onBack={back}
+                onConfirm={handleConfirm}
+                isSaving={isSavingProfile}
+                saveError={saveError}
+                saveSuccess={saveSuccess}
+              />
+            )}
+          </div>
         </div>
       </main>
     </div>

@@ -145,6 +145,39 @@
   pointer-events: none;
 }
 
+.ob-card-layout {
+  display: flex;
+  gap: 2rem;
+}
+
+.ob-illustration {
+  flex: 0 0 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: var(--radius-md);
+  padding: 2rem;
+  text-align: center;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+@media (max-width: 768px) {
+  .ob-card-layout {
+    flex-direction: column;
+  }
+  .ob-illustration {
+    flex: auto;
+    padding: 1rem;
+  }
+  .ob-illustration div {
+    font-size: 2.5rem !important;
+  }
+}
+
+
 /* ══════════════════════════════════════
    STEP HEADER
 ══════════════════════════════════════ */

@@ -132,7 +132,25 @@ export default function SmartDailyPlanPanel({ onProblemSelect }) {
               <h4 style={{ fontSize: '0.9rem', margin: '0 0 1rem 0', color: 'var(--text-primary)' }}>Today's Tasks ({plan.tasks.length})</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {plan.tasks.map((task, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', background: 'var(--bg-dark)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-strong)' }}>
+                  <button 
+                    key={i} 
+                    onClick={() => onProblemSelect ? onProblemSelect(task) : null}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'flex-start', 
+                      gap: '0.75rem', 
+                      background: 'var(--bg-dark)', 
+                      padding: '0.75rem', 
+                      borderRadius: 'var(--radius-sm)', 
+                      border: '1px solid var(--border-strong)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'border-color 0.2s',
+                      width: '100%'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--accent-indigo)'}
+                    onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--border-strong)'}
+                  >
                     <div style={{ background: 'var(--bg-panel)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
                       {task.duration_minutes}m
                     </div>
@@ -140,7 +158,10 @@ export default function SmartDailyPlanPanel({ onProblemSelect }) {
                       <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>{task.title}</div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>{task.topic}</div>
                     </div>
-                  </div>
+                    <div style={{ marginLeft: 'auto', color: 'var(--accent-indigo)', fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>
+                      ›
+                    </div>
+                  </button>
                 ))}
               </div>
             </div>
