@@ -31,7 +31,6 @@ export default function AppShell({ children, activeView, setActiveView }) {
     { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
     { id: 'revision', label: 'Study Plan', icon: '📅' },
     { id: 'problems', label: 'Problems', icon: '🧩' },
-    { id: 'analytics', label: 'Analytics', icon: '📈' },
     { id: 'achievements', label: 'Achievements', icon: '🏆' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
   ];

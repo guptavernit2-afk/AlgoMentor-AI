@@ -7,7 +7,6 @@ import OnboardingWizard from "./components/onboarding/OnboardingWizard";
 import DashboardView from "./views/DashboardView";
 import ScheduleView from "./views/ScheduleView";
 import RevisionView from "./views/RevisionView";
-import AnalyticsView from "./views/AnalyticsView";
 import SettingsView from "./views/SettingsView";
 import WorkspaceView from "./views/WorkspaceView";
 
@@ -68,7 +67,6 @@ function App() {
       {activeView === 'dashboard' && <DashboardView setActiveView={setActiveView} onNavigateWorkspace={handleNavigateWorkspace} />}
       {activeView === 'schedule' && <ScheduleView />}
       {activeView === 'revision' && <RevisionView />}
-      {activeView === 'analytics' && <AnalyticsView />}
       {activeView === 'settings' && <SettingsView />}
     </AppShell>
   );
