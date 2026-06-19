@@ -1,9 +1,28 @@
-import React from 'react';
+import { useState } from 'react';
 import SmartDailyPlanPanel from '../components/SmartDailyPlanPanel';
 import SM2FeedbackWidget from '../components/SM2FeedbackWidget';
+import CheckInModal from '../components/CheckInModal';
 import './DashboardView.css';
 
-export default function DashboardView({ setActiveView }) {
+export default function DashboardView({ setActiveView, onNavigateWorkspace }) {
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [planRefreshTrigger, setPlanRefreshTrigger] = useState(0);
+
+  const handlePlanLoaded = (plan) => {
+    // If no override applied today, show the check-in modal
+    if (plan && !plan.override_applied) {
+      setShowCheckInModal(true);
+    }
+  };
+
+  const handleCheckInComplete = () => {
+    setShowCheckInModal(false);
+    setPlanRefreshTrigger(prev => prev + 1); // Tell panel to refetch
+  };
+
+  const handleCheckInSkip = () => {
+    setShowCheckInModal(false);
+  };
   return (
     <div className="layout-view layout-view-padded">
       
@@ -94,7 +113,11 @@ export default function DashboardView({ setActiveView }) {
         
         {/* Left Column: Smart Daily Plan Panel */}
         <div className="dashboard-lower-left">
-          <SmartDailyPlanPanel onProblemSelect={() => setActiveView('workspace')} />
+          <SmartDailyPlanPanel 
+            onProblemSelect={(problemId) => onNavigateWorkspace(problemId)} 
+            onPlanLoaded={handlePlanLoaded}
+            refreshTrigger={planRefreshTrigger}
+          />
         </div>
 
         {/* Right Column: Widgets */}
@@ -102,34 +125,43 @@ export default function DashboardView({ setActiveView }) {
           
           <SM2FeedbackWidget />
 
-          {/* Weak Concepts Widget */}
+          {/* Recent Submissions Widget */}
           <div className="widget-card" style={{ flex: 1 }}>
             <div className="widget-header">
-              <h3 className="widget-title">Weak Concepts</h3>
+              <h3 className="widget-title">Recent Submissions</h3>
               <a className="widget-action">View All →</a>
             </div>
 
             <div className="weak-concept-list">
               <div className="weak-concept-item">
                 <div className="wc-info">
-                  <span className="wc-icon">🎯</span>
-                  <span className="wc-name">Binary Search</span>
+                  <span className="wc-icon" style={{color: 'var(--accent-green)'}}>✔</span>
+                  <div style={{display: 'flex', flexDirection: 'column'}}>
+                    <span className="wc-name">Two Sum</span>
+                    <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>Array • Easy</span>
+                  </div>
                 </div>
-                <span className="wc-status">2 days overdue</span>
+                <span className="wc-status healthy">Optimal</span>
               </div>
               <div className="weak-concept-item">
                 <div className="wc-info">
-                  <span className="wc-icon">🔄</span>
-                  <span className="wc-name">Recursion</span>
+                  <span className="wc-icon" style={{color: 'var(--accent-green)'}}>✔</span>
+                  <div style={{display: 'flex', flexDirection: 'column'}}>
+                    <span className="wc-name">Valid Palindrome</span>
+                    <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>Two Pointers • Easy</span>
+                  </div>
                 </div>
-                <span className="wc-status">Fading fast</span>
+                <span className="wc-status healthy">Optimal</span>
               </div>
               <div className="weak-concept-item">
                 <div className="wc-info">
-                  <span className="wc-icon">🌳</span>
-                  <span className="wc-name">Tree Traversals</span>
+                  <span className="wc-icon" style={{color: 'var(--accent-orange)'}}>!</span>
+                  <div style={{display: 'flex', flexDirection: 'column'}}>
+                    <span className="wc-name">Subarray Sum Equals K</span>
+                    <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>Prefix Sum • Medium</span>
+                  </div>
                 </div>
-                <span className="wc-status healthy">Recovering</span>
+                <span className="wc-status">Suboptimal</span>
               </div>
             </div>
           </div>
@@ -137,6 +169,13 @@ export default function DashboardView({ setActiveView }) {
         </div>
 
       </section>
+
+      {showCheckInModal && (
+        <CheckInModal 
+          onClose={handleCheckInSkip} 
+          onComplete={handleCheckInComplete} 
+        />
+      )}
 
     </div>
   );

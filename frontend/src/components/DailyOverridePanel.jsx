@@ -136,6 +136,7 @@ export default function DailyOverridePanel() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadOverride(date);
   }, [date, loadOverride]);
 

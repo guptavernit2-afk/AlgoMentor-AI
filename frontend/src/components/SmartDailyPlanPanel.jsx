@@ -9,25 +9,30 @@ function todayISO() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-export default function SmartDailyPlanPanel({ onProblemSelect }) {
+export default function SmartDailyPlanPanel({ onProblemSelect, onPlanLoaded, refreshTrigger }) {
   const [date, setDate] = useState(todayISO());
   const [plan, setPlan] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedTask, setExpandedTask] = useState(null);
 
   const fetchPlan = useCallback(async (targetDate) => {
     setIsLoading(true);
     try {
       const data = await getDailyPlan(DEMO_USER_ID, targetDate);
       setPlan(data);
+      if (onPlanLoaded) onPlanLoaded(data);
     } catch (err) {
       console.warn("Failed to fetch plan", err);
       setPlan(null);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [onPlanLoaded]);
 
-  useEffect(() => { fetchPlan(date); }, [date, fetchPlan]);
+  useEffect(() => { 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchPlan(date); 
+  }, [date, fetchPlan, refreshTrigger]);
 
   return (
     <div className="widget-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', height: '100%' }}>
@@ -130,38 +135,82 @@ export default function SmartDailyPlanPanel({ onProblemSelect }) {
 
             <div>
               <h4 style={{ fontSize: '0.9rem', margin: '0 0 1rem 0', color: 'var(--text-primary)' }}>Today's Tasks ({plan.tasks.length})</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {plan.tasks.map((task, i) => (
-                  <button 
-                    key={i} 
-                    onClick={() => onProblemSelect ? onProblemSelect(task) : null}
+              {/* ── Tasks List ── */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', flex: 1, overflowY: 'auto', paddingRight: '0.5rem' }}>
+                {plan.tasks.map((task) => (
+                  <div 
+                    key={task.task_id} 
+                    className={`task-item hover-card`}
                     style={{ 
                       display: 'flex', 
-                      alignItems: 'flex-start', 
-                      gap: '0.75rem', 
-                      background: 'var(--bg-dark)', 
-                      padding: '0.75rem', 
-                      borderRadius: 'var(--radius-sm)', 
-                      border: '1px solid var(--border-strong)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'border-color 0.2s',
-                      width: '100%'
+                      flexDirection: 'column',
+                      padding: '1rem', 
+                      borderRadius: 'var(--radius-md)', 
+                      border: '1px solid var(--border-subtle)',
+                      background: 'var(--bg-base)',
+                      transition: 'all 0.2s',
+                      cursor: task.problem ? 'pointer' : 'default'
                     }}
-                    onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--accent-indigo)'}
-                    onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--border-strong)'}
+                    onClick={() => {
+                      if (task.problem) {
+                        setExpandedTask(expandedTask === task.task_id ? null : task.task_id);
+                      }
+                    }}
                   >
-                    <div style={{ background: 'var(--bg-panel)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                      {task.duration_minutes}m
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ width: '45px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 500 }}>
+                        {task.duration_minutes}m
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
+                          {task.problem ? `Solve: ${task.problem.title}` : task.title}
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                          {task.problem ? `${task.problem.difficulty} • ${task.problem.topic}` : task.topic}
+                        </div>
+                      </div>
+                      {task.problem && (
+                        <div style={{ color: 'var(--accent-indigo)' }}>
+                          {expandedTask === task.task_id ? '▲' : '▼'}
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>{task.title}</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>{task.topic}</div>
-                    </div>
-                    <div style={{ marginLeft: 'auto', color: 'var(--accent-indigo)', fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>
-                      ›
-                    </div>
-                  </button>
+
+                    {/* Expanded Problem Actions */}
+                    {task.problem && expandedTask === task.task_id && (
+                      <div style={{ 
+                        marginTop: '1rem', 
+                        paddingTop: '1rem', 
+                        borderTop: '1px solid var(--border-subtle)',
+                        display: 'flex',
+                        gap: '1rem'
+                      }}>
+                        <button 
+                          className="btn-primary" 
+                          style={{ flex: 1, fontSize: '0.85rem', padding: '0.5rem' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Optional: Navigate with problem_id
+                            if (onProblemSelect) onProblemSelect(task.problem.id);
+                          }}
+                        >
+                          Solve in Workspace
+                        </button>
+                        {task.problem.leetcode_link && (
+                          <a 
+                            href={task.problem.leetcode_link} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="btn-secondary"
+                            style={{ flex: 1, fontSize: '0.85rem', padding: '0.5rem', textAlign: 'center', textDecoration: 'none' }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Solve on LeetCode
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>

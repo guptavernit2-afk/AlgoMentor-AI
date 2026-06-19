@@ -60,7 +60,7 @@ export async function checkBackendHealth() {
     try {
         const data = await apiFetch('/health');
         return data?.status === 'healthy';
-    } catch (error) {
+    } catch {
         return false;
     }
 }
@@ -222,6 +222,16 @@ export async function submitTopicReview(userId, topic, quality, reviewedOn) {
  */
 export async function getWorkspaceProblem() {
     return apiFetch(`/api/workspace/problems/recommendation`);
+}
+
+/**
+ * Fetch a specific problem by ID to solve in the IDE workspace.
+ *
+ * @param {string} problemId
+ * @returns {Promise<object>} Problem data
+ */
+export async function getWorkspaceProblemById(problemId) {
+    return apiFetch(`/api/workspace/problems/${problemId}`);
 }
 
 /**

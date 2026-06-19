@@ -13,12 +13,17 @@ import WorkspaceView from "./views/WorkspaceView";
 
 function App() {
   const [activeView, setActiveView] = useState("dashboard");
-  const [backendStatus, setBackendStatus] = useState("PROTOTYPE · CHECKING API");
+  const [activeWorkspaceProblem, setActiveWorkspaceProblem] = useState(null);
   const [onboardingStatus, setOnboardingStatus] = useState('checking');
+
+  const handleNavigateWorkspace = (problemId = null) => {
+    setActiveWorkspaceProblem(problemId);
+    setActiveView('workspace');
+  };
 
   useEffect(() => {
     checkBackendHealth().then((isHealthy) => {
-      setBackendStatus(isHealthy ? "PROTOTYPE · API CONNECTED" : "PROTOTYPE · API OFFLINE");
+      console.log(isHealthy ? "API CONNECTED" : "API OFFLINE");
     });
   }, []);
 
@@ -28,7 +33,7 @@ function App() {
       .then(() => {
         if (!cancelled) setOnboardingStatus('complete');
       })
-      .catch((err) => {
+      .catch(() => {
         if (cancelled) return;
         setOnboardingStatus('required');
       });
@@ -55,12 +60,12 @@ function App() {
   }
 
   if (activeView === 'workspace') {
-    return <WorkspaceView setActiveView={setActiveView} />;
+    return <WorkspaceView setActiveView={setActiveView} problemId={activeWorkspaceProblem} />;
   }
 
   return (
     <AppShell activeView={activeView} setActiveView={setActiveView}>
-      {activeView === 'dashboard' && <DashboardView setActiveView={setActiveView} />}
+      {activeView === 'dashboard' && <DashboardView setActiveView={setActiveView} onNavigateWorkspace={handleNavigateWorkspace} />}
       {activeView === 'schedule' && <ScheduleView />}
       {activeView === 'revision' && <RevisionView />}
       {activeView === 'analytics' && <AnalyticsView />}

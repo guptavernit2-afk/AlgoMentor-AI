@@ -332,6 +332,7 @@ class DailyPlanTask(BaseModel):
     duration_minutes: int
     task_type: TaskType
     reason: str
+    problem: "ProblemRecommendation | None" = None
 
 
 class DailyPlanResponse(BaseModel):

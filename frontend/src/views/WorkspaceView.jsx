@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import ReactMarkdown from 'react-markdown';
-import { getWorkspaceProblem, submitWorkspaceCode } from '../services/api';
+import { getWorkspaceProblem, getWorkspaceProblemById, submitWorkspaceCode } from '../services/api';
 import './WorkspaceView.css';
 
-export default function WorkspaceView({ setActiveView }) {
+export default function WorkspaceView({ setActiveView, problemId }) {
   const [problem, setProblem] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [language, setLanguage] = useState('python');
@@ -17,7 +17,7 @@ export default function WorkspaceView({ setActiveView }) {
   useEffect(() => {
     async function loadProblem() {
       try {
-        const data = await getWorkspaceProblem();
+        const data = problemId ? await getWorkspaceProblemById(problemId) : await getWorkspaceProblem();
         setProblem(data);
         setCode(data.starterCode[language]);
       } catch (err) {
@@ -27,7 +27,8 @@ export default function WorkspaceView({ setActiveView }) {
       }
     }
     loadProblem();
-  }, []); // Run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [problemId]); // Run once on mount
 
   // Handle language change
   const handleLanguageChange = (e) => {

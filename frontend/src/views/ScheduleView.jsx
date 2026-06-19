@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
-import DailyOverridePanel from '../components/DailyOverridePanel';
+import { useState } from 'react';
 
 export default function ScheduleView() {
   const [collegeSchedule, setCollegeSchedule] = useState('9 AM – 4 PM');
   const [availableTime, setAvailableTime] = useState('1.5 hours');
   const [workload, setWorkload] = useState('Medium');
-  const [situation, setSituation] = useState('Normal day');
 
   return (
     <div className="layout-view layout-view-padded">
@@ -66,10 +64,6 @@ export default function ScheduleView() {
         </div>
       </section>
 
-      {/* ── Daily Override Panel ── */}
-      <section>
-        <DailyOverridePanel />
-      </section>
     </div>
   );
 }

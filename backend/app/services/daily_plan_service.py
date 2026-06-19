@@ -198,6 +198,7 @@ def generate_tasks(
     available_minutes: int,
     revision_focus: str | None,
     current_topic: str,
+    recommended_problems: list["ProblemRecommendation"] = None,
 ) -> list[DailyPlanTask]:
     """
     Build a practical task list whose total duration never exceeds
@@ -208,6 +209,11 @@ def generate_tasks(
     """
     tasks: list[DailyPlanTask] = []
     rev = revision_focus or current_topic
+    
+    # Helper to pull a problem if we have one
+    prob_pool = list(recommended_problems or [])
+    def _pop_prob() -> "ProblemRecommendation | None":
+        return prob_pool.pop(0) if prob_pool else None
 
     if intensity == "Rest":
         tasks.append(
@@ -242,6 +248,7 @@ def generate_tasks(
                         f"Short revision of {rev} to keep recently studied "
                         "patterns fresh without heavy cognitive load."
                     ),
+                    problem=_pop_prob()
                 )
             )
             tasks.append(
@@ -255,20 +262,22 @@ def generate_tasks(
                         f"Light read-through of {current_topic} notes "
                         "to maintain familiarity on a busy day."
                     ),
+                    problem=_pop_prob()
                 )
             )
         else:
             tasks.append(
                 DailyPlanTask(
                     task_id=1,
-                    title=f"Review {current_topic} pattern notes",
+                    title=f"Practice {current_topic} problems",
                     topic=current_topic,
                     duration_minutes=available_minutes,
                     task_type="Current Topic",
                     reason=(
-                        f"Focused read-through of {current_topic} "
-                        "keeping the session light."
+                        "With limited time, focused practice on the current "
+                        "topic yields the best return."
                     ),
+                    problem=_pop_prob()
                 )
             )
         return tasks
@@ -283,14 +292,15 @@ def generate_tasks(
             tasks.append(
                 DailyPlanTask(
                     task_id=1,
-                    title=f"Solve one {rev} recall problem",
+                    title=f"Revision of {rev}",
                     topic=rev,
                     duration_minutes=rev_mins,
                     task_type="Revision",
                     reason=(
-                        f"Revisiting {rev} reinforces retention of a "
-                        "previously completed topic."
+                        f"Prioritising {rev} to combat the forgetting curve "
+                        "before moving to new material."
                     ),
+                    problem=_pop_prob()
                 )
             )
         else:
@@ -308,6 +318,7 @@ def generate_tasks(
                     f"Active problem-solving on {current_topic} builds "
                     "fluency with the current learning objective."
                 ),
+                problem=_pop_prob()
             )
         )
         tasks.append(
@@ -344,6 +355,7 @@ def generate_tasks(
                     f"Deep revision of {rev} on a free/high-time day "
                     "for stronger long-term retention."
                 ),
+                problem=_pop_prob()
             )
         )
     else:
@@ -361,6 +373,7 @@ def generate_tasks(
                 f"Extended {current_topic} practice takes advantage of "
                 "the larger time budget available today."
             ),
+            problem=_pop_prob()
         )
     )
     tasks.append(
@@ -374,6 +387,7 @@ def generate_tasks(
                 "Mixed problems from today's recommended set reinforce "
                 "pattern recognition across topics."
             ),
+            problem=_pop_prob()
         )
     )
     tasks.append(
@@ -514,6 +528,7 @@ def build_daily_plan(
         available_minutes=available_minutes,
         revision_focus=revision_focus,
         current_topic=profile.current_topic,
+        recommended_problems=recommended_problems,
     )
 
     # Human-readable reasoning

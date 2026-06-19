@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function SettingsView() {
   return (
     <div className="layout-view layout-view-padded">

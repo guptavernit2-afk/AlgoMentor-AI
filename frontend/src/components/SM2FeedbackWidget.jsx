@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getRevisionQueue, submitTopicReview, DEMO_USER_ID } from '../services/api';
 
 function todayISO() {
@@ -37,6 +37,7 @@ export default function SM2FeedbackWidget() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchQueue();
   }, [fetchQueue]);
 

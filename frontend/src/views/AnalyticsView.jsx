@@ -1,7 +1,6 @@
-import React from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-  LineChart, Line, AreaChart, Area
+  AreaChart, Area
 } from 'recharts';
 
 const weeklyData = [

@@ -1,5 +1,14 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import SmartDailyPlanPanel from '../components/SmartDailyPlanPanel';
+import { submitTopicReview, DEMO_USER_ID } from '../services/api';
+
+function todayISO() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
 
 const topics = [
   { name: "Arrays", status: "Revision Due", mastery: 74, daysAgo: 8, risk: 64, position: "node-pos-1" },
@@ -13,13 +22,25 @@ export default function RevisionView() {
   const [userCode, setUserCode] = useState("");
   const [reviewGenerated, setReviewGenerated] = useState(false);
   const [activeTab, setActiveTab] = useState("workspace");
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
 
   function handleProblemSelect(problem) {
     setSelectedProblem(problem);
     setUserCode(problem.code || "// Write your solution here...");
     setReviewGenerated(false);
+    setRatingSubmitted(false);
     setActiveTab("workspace");
   }
+
+  const handleRating = async (quality) => {
+    if (!selectedProblem) return;
+    try {
+      await submitTopicReview(DEMO_USER_ID, selectedProblem.topic, quality, todayISO());
+      setRatingSubmitted(true);
+    } catch (err) {
+      console.error("Failed to submit rating", err);
+    }
+  };
 
   return (
     <div className="layout-view layout-view-padded">
@@ -96,6 +117,43 @@ export default function RevisionView() {
                       <div style={{ background: 'rgba(99, 102, 241, 0.1)', padding: '1rem', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--accent-indigo)' }}>
                         <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent-indigo)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>AI Note</span>
                         <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-primary)' }}>Your logic is optimized. Next, try a variation where the array contains repeated numbers.</p>
+                      </div>
+
+                      {/* SM-2 Feedback Section */}
+                      <div style={{ marginTop: '1.5rem', background: 'var(--bg-base)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-md)', padding: '1.25rem', textAlign: 'center' }}>
+                        {!ratingSubmitted ? (
+                          <>
+                            <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', color: 'var(--text-primary)' }}>How well did you recall this topic?</h4>
+                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                              {[0, 1, 2, 3, 4, 5].map(q => (
+                                <button
+                                  key={q}
+                                  onClick={() => handleRating(q)}
+                                  title={`Quality: ${q}`}
+                                  style={{
+                                    width: '32px', height: '32px', borderRadius: '50%',
+                                    background: 'var(--bg-dark)', border: '1px solid var(--border-strong)',
+                                    color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600,
+                                    transition: 'all 0.2s'
+                                  }}
+                                  onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--accent-indigo)'; e.currentTarget.style.color = 'var(--accent-indigo)'; }}
+                                  onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+                                >
+                                  {q}
+                                </button>
+                              ))}
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                              <span>0 = Blackout</span>
+                              <span>5 = Perfect Recall</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{ color: 'var(--accent-green)', fontWeight: 500, fontSize: '0.95rem' }}>
+                            <span style={{ marginRight: '0.5rem' }}>✔</span>
+                            Memory graph updated!
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
