@@ -194,6 +194,16 @@ export async function getRevisionQueue(userId, asOfDate) {
 }
 
 /**
+ * Get user progress.
+ *
+ * @param {string} userId
+ * @returns {Promise<object>} ProgressResponse
+ */
+export async function getUserProgress(userId) {
+    return apiFetch(`/api/users/${userId}/progress`);
+}
+
+/**
  * Submit a topic review (recall quality 0-5) to update the SM-2 schedule.
  *
  * @param {string} userId

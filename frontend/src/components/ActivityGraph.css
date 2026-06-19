@@ -1,0 +1,81 @@
+.activity-graph-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.activity-graph-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.activity-graph-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.activity-graph-total {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.activity-graph-scroll {
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.activity-graph-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.activity-graph-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+
+.activity-graph-grid {
+  display: flex;
+  gap: 4px;
+}
+
+.activity-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.activity-cell {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background-color: var(--bg-dark); /* default 0 */
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* GitHub-style green theme */
+.activity-cell.intensity-0 { background-color: rgba(255, 255, 255, 0.05); }
+.activity-cell.intensity-1 { background-color: #0e4429; }
+.activity-cell.intensity-2 { background-color: #006d32; }
+.activity-cell.intensity-3 { background-color: #26a641; }
+.activity-cell.intensity-4 { background-color: #39d353; }
+
+.activity-graph-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
+
+.activity-graph-legend span {
+  margin: 0 4px;
+}

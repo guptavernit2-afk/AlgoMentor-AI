@@ -56,33 +56,6 @@ export default function AppShell({ children, activeView, setActiveView }) {
             </button>
           ))}
         </nav>
-
-        <div className="sidebar-bottom-widgets">
-          <div className="sidebar-protip">
-            <div className="protip-label">
-              <span>💡</span> PRO TIP
-            </div>
-            <div className="protip-text">
-              Consistency is the ultimate algorithm.<br/>
-              <span style={{ color: 'var(--accent-indigo)', fontWeight: 600 }}>Keep showing up!</span>
-            </div>
-          </div>
-
-          <div className="sidebar-streak-card">
-            <div className="streak-header">
-              <span className="streak-title">Study Streak</span>
-            </div>
-            <div className="streak-value">7 <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>days</span></div>
-            <div style={{ display: 'flex', gap: '4px', marginTop: '0.75rem', height: '20px', alignItems: 'flex-end' }}>
-              {[30, 50, 40, 70, 60, 90, 80].map((h, i) => (
-                <div key={i} style={{ flex: 1, background: 'var(--accent-green)', height: `${h}%`, borderRadius: '2px' }} />
-              ))}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-              <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
-            </div>
-          </div>
-        </div>
       </aside>
 
       {/* ── CENTER WORKSPACE ── */}

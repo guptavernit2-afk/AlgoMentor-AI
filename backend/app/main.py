@@ -19,6 +19,7 @@ from app.routers import (
     revisions,
     schedules,
     workspace,
+    progress,
 )
 
 
@@ -47,6 +48,7 @@ def create_app() -> FastAPI:
     application.include_router(daily_plans.router)
     application.include_router(revisions.router)
     application.include_router(workspace.router)
+    application.include_router(progress.router)
 
     return application
 

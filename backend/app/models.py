@@ -97,6 +97,28 @@ class StudentProfileResponse(BaseModel):
 
 
 # ============================================================
+# Progress and Activity Models
+# ============================================================
+
+class DifficultyCounts(BaseModel):
+    Easy: int
+    Medium: int
+    Hard: int
+
+class ProgressStats(BaseModel):
+    total_solved: int
+    difficulty_counts: DifficultyCounts
+    current_streak: int
+    memory_retention_percent: int
+
+class ProgressResponse(BaseModel):
+    user_id: str
+    stats: ProgressStats
+    # Maps "YYYY-MM-DD" to number of problems solved on that day
+    activity_graph: dict[str, int]
+
+
+# ============================================================
 # Weekly Schedule Models
 # ============================================================
 

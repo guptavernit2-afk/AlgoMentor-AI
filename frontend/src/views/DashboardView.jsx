@@ -1,173 +1,133 @@
-import { useState } from 'react';
-import SmartDailyPlanPanel from '../components/SmartDailyPlanPanel';
-import SM2FeedbackWidget from '../components/SM2FeedbackWidget';
+import { useState, useEffect } from 'react';
 import CheckInModal from '../components/CheckInModal';
+import ActivityGraph from '../components/ActivityGraph';
+import { getDailyPlan, getUserProgress, DEMO_USER_ID } from '../services/api';
 import './DashboardView.css';
 
-export default function DashboardView({ setActiveView, onNavigateWorkspace }) {
+function todayISO() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+export default function DashboardView({ setActiveView }) {
   const [showCheckInModal, setShowCheckInModal] = useState(false);
-  const [planRefreshTrigger, setPlanRefreshTrigger] = useState(0);
+  const [progressData, setProgressData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handlePlanLoaded = (plan) => {
-    // If no override applied today, show the check-in modal
-    if (plan && !plan.override_applied) {
-      setShowCheckInModal(true);
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [plan, progress] = await Promise.all([
+          getDailyPlan(DEMO_USER_ID, todayISO()).catch(() => null),
+          getUserProgress(DEMO_USER_ID).catch(() => null)
+        ]);
+        
+        if (plan && !plan.override_applied) {
+          setShowCheckInModal(true);
+        }
+        
+        if (progress) {
+          setProgressData(progress);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch dashboard data", err);
+      } finally {
+        setIsLoading(false);
+      }
     }
-  };
+    fetchData();
+  }, []);
 
-  const handleCheckInComplete = () => {
-    setShowCheckInModal(false);
-    setPlanRefreshTrigger(prev => prev + 1); // Tell panel to refetch
-  };
+  const handleCheckInComplete = () => setShowCheckInModal(false);
+  const handleCheckInSkip = () => setShowCheckInModal(false);
 
-  const handleCheckInSkip = () => {
-    setShowCheckInModal(false);
-  };
   return (
     <div className="layout-view layout-view-padded">
       
-      {/* ── 1. Hero Section ── */}
-      <section className="dashboard-hero">
-        <div className="dashboard-hero-glow" />
-
-        <div className="dashboard-hero-content">
-          <p className="dashboard-hero-eyebrow">
-            AI + Spaced Revision For DSA
-          </p>
-          <h1 className="dashboard-hero-title">
-            Welcome back,<br/>
-            <span>Vernit</span> 👋
-          </h1>
-          <p className="dashboard-hero-subtitle">
-            Your intelligent study companion that adapts to your memory, schedule, and goals to help you master DSA consistently.
-          </p>
-          <div>
+      {/* ── 1. Profile / Hero Section ── */}
+      <section className="dashboard-hero" style={{ padding: '2rem', display: 'flex', gap: '2rem', alignItems: 'center', background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)' }}>
+        <div style={{ position: 'relative' }}>
+          <img src="https://i.pravatar.cc/150?u=vernit" alt="Profile" style={{ width: '100px', height: '100px', borderRadius: '50%', border: '4px solid var(--bg-dark)' }} />
+          <div style={{ position: 'absolute', bottom: 0, right: 0, background: 'var(--accent-green)', width: '20px', height: '20px', borderRadius: '50%', border: '3px solid var(--bg-card)' }}></div>
+        </div>
+        <div style={{ flex: 1 }}>
+          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '1.75rem', color: 'var(--text-primary)' }}>Vernit Gupta</h1>
+          <p style={{ margin: '0 0 1.25rem 0', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>Top 5% · 124 Day Streak · Master Rank</p>
+          <div style={{ display: 'flex', gap: '1rem' }}>
             <button 
               onClick={() => setActiveView('revision')}
-              className="dashboard-hero-button"
+              className="btn-primary"
+              style={{ background: 'var(--accent-indigo)', color: 'white', border: 'none', padding: '0.6rem 1.2rem', borderRadius: 'var(--radius-md)', fontWeight: 600, cursor: 'pointer' }}
             >
-              View Today's Plan →
+              View Today's Study Plan →
+            </button>
+            <button 
+              style={{ background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-strong)', padding: '0.6rem 1.2rem', borderRadius: 'var(--radius-md)', fontWeight: 500, cursor: 'pointer' }}
+            >
+              Edit Profile
             </button>
           </div>
         </div>
-
-        <div className="dashboard-hero-visual">
-          <div style={{ position: 'absolute', width: '220px', height: '220px', borderRadius: '50% 50% 10% 10%', border: '2px solid rgba(99, 102, 241, 0.3)', background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.05) 0%, rgba(99, 102, 241, 0.01) 100%)', boxShadow: 'inset 0 10px 30px rgba(99, 102, 241, 0.2), 0 0 40px rgba(99, 102, 241, 0.1)', top: '10%' }}></div>
-          <div style={{ position: 'absolute', width: '260px', height: '10px', background: 'rgba(99, 102, 241, 0.2)', borderRadius: '50%', bottom: '15%', filter: 'blur(4px)' }}></div>
-          <div style={{ position: 'absolute', width: '240px', height: '14px', border: '2px solid rgba(99, 102, 241, 0.4)', borderRadius: '50%', bottom: '15%' }}></div>
-          
-          <svg width="180" height="180" viewBox="0 0 100 100" style={{ filter: 'drop-shadow(0 0 15px rgba(99, 102, 241, 0.6))', position: 'relative', top: '-5%' }}>
-            <defs>
-              <linearGradient id="brainGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#818cf8" />
-                <stop offset="100%" stopColor="#6366f1" />
-              </linearGradient>
-            </defs>
-            <path d="M50 20 C30 20 15 35 15 55 C15 75 30 90 50 90" fill="none" stroke="url(#brainGrad2)" strokeWidth="1.5" opacity="0.8" />
-            <path d="M50 30 C35 30 25 40 25 55 C25 70 35 80 50 80" fill="none" stroke="url(#brainGrad2)" strokeWidth="1.5" opacity="0.5" />
-            <path d="M50 20 C70 20 85 35 85 55 C85 75 70 90 50 90" fill="none" stroke="url(#brainGrad2)" strokeWidth="1.5" opacity="0.8" />
-            <path d="M50 30 C65 30 75 40 75 55 C75 70 65 80 50 80" fill="none" stroke="url(#brainGrad2)" strokeWidth="1.5" opacity="0.5" />
-            
-            <circle cx="35" cy="45" r="2" fill="#818cf8" />
-            <circle cx="65" cy="45" r="2" fill="#818cf8" />
-            <circle cx="50" cy="65" r="2.5" fill="#a5b4fc" />
-            <circle cx="30" cy="70" r="1.5" fill="#818cf8" />
-            <circle cx="70" cy="70" r="1.5" fill="#818cf8" />
-            
-            <line x1="35" y1="45" x2="65" y2="45" stroke="#818cf8" strokeWidth="1" strokeDasharray="2 2" opacity="0.6" />
-            <line x1="35" y1="45" x2="50" y2="65" stroke="#a5b4fc" strokeWidth="1" opacity="0.8" />
-            <line x1="65" y1="45" x2="50" y2="65" stroke="#a5b4fc" strokeWidth="1" opacity="0.8" />
-          </svg>
-        </div>
       </section>
 
-      {/* ── 2. KPI Cards ── */}
-      <section className="dashboard-kpi-grid">
-        {[
-          { label: 'Study Time Today', value: '120', unit: 'mins', icon: '⏱️', trend: '↑ 20% vs yesterday', color: 'var(--accent-green, #4ade80)', iconBg: 'rgba(59, 130, 246, 0.1)' },
-          { label: 'Problems Solved', value: '8', unit: 'problems', icon: '</>', trend: '↑ 33% vs yesterday', color: 'var(--accent-green, #4ade80)', iconBg: 'rgba(16, 185, 129, 0.1)' },
-          { label: 'Revision Accuracy', value: '64%', unit: '', icon: '🎯', trend: '↑ 8% vs last week', color: 'var(--accent-green, #4ade80)', iconBg: 'rgba(139, 92, 246, 0.1)' },
-          { label: 'Current Streak', value: '7', unit: 'days', icon: '🔥', trend: '🔥 Keep it going!', color: 'var(--accent-orange, #f59e0b)', iconBg: 'rgba(245, 158, 11, 0.1)' }
-        ].map((kpi, i) => (
-          <div key={i} className="widget-card kpi-card">
-            <div className="kpi-header">
-              <div className="kpi-icon" style={{ background: kpi.iconBg }}>
-                {kpi.icon}
-              </div>
-              <div className="kpi-info">
-                <div className="kpi-label">{kpi.label}</div>
-                <div className="kpi-value">
-                  {kpi.value} <span className="kpi-unit">{kpi.unit}</span>
-                </div>
-              </div>
-            </div>
-            <div className="kpi-trend" style={{ color: kpi.color }}>
-              {kpi.trend}
-            </div>
-          </div>
-        ))}
-      </section>
-
-      {/* ── 3. Lower Grid (Smart Plan + Memory/Weakness) ── */}
-      <section className="dashboard-lower-grid">
-        
-        {/* Left Column: Smart Daily Plan Panel */}
-        <div className="dashboard-lower-left">
-          <SmartDailyPlanPanel 
-            onProblemSelect={(problemId) => onNavigateWorkspace(problemId)} 
-            onPlanLoaded={handlePlanLoaded}
-            refreshTrigger={planRefreshTrigger}
-          />
-        </div>
-
-        {/* Right Column: Widgets */}
-        <div className="dashboard-lower-right">
-          
-          <SM2FeedbackWidget />
-
-          {/* Recent Submissions Widget */}
-          <div className="widget-card" style={{ flex: 1 }}>
-            <div className="widget-header">
-              <h3 className="widget-title">Recent Submissions</h3>
-              <a className="widget-action">View All →</a>
-            </div>
-
-            <div className="weak-concept-list">
-              <div className="weak-concept-item">
-                <div className="wc-info">
-                  <span className="wc-icon" style={{color: 'var(--accent-green)'}}>✔</span>
-                  <div style={{display: 'flex', flexDirection: 'column'}}>
-                    <span className="wc-name">Two Sum</span>
-                    <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>Array • Easy</span>
-                  </div>
-                </div>
-                <span className="wc-status healthy">Optimal</span>
-              </div>
-              <div className="weak-concept-item">
-                <div className="wc-info">
-                  <span className="wc-icon" style={{color: 'var(--accent-green)'}}>✔</span>
-                  <div style={{display: 'flex', flexDirection: 'column'}}>
-                    <span className="wc-name">Valid Palindrome</span>
-                    <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>Two Pointers • Easy</span>
-                  </div>
-                </div>
-                <span className="wc-status healthy">Optimal</span>
-              </div>
-              <div className="weak-concept-item">
-                <div className="wc-info">
-                  <span className="wc-icon" style={{color: 'var(--accent-orange)'}}>!</span>
-                  <div style={{display: 'flex', flexDirection: 'column'}}>
-                    <span className="wc-name">Subarray Sum Equals K</span>
-                    <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>Prefix Sum • Medium</span>
-                  </div>
-                </div>
-                <span className="wc-status">Suboptimal</span>
+      {/* ── 2. Progress Report (KPI Cards) ── */}
+      <section className="dashboard-kpi-grid" style={{ marginTop: '2rem' }}>
+        <div className="widget-card kpi-card">
+          <div className="kpi-header">
+            <div className="kpi-icon" style={{ background: 'rgba(59, 130, 246, 0.1)' }}>🎯</div>
+            <div className="kpi-info">
+              <div className="kpi-label">Total Solved</div>
+              <div className="kpi-value">
+                {progressData ? progressData.stats.total_solved : '...'} <span className="kpi-unit">/ 1000</span>
               </div>
             </div>
           </div>
-
+          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', fontSize: '0.75rem' }}>
+            <span style={{ color: 'var(--accent-green)' }}>Easy: {progressData ? progressData.stats.difficulty_counts.Easy : '-'}</span> • 
+            <span style={{ color: 'var(--accent-yellow)' }}>Med: {progressData ? progressData.stats.difficulty_counts.Medium : '-'}</span> • 
+            <span style={{ color: 'var(--accent-red)' }}>Hard: {progressData ? progressData.stats.difficulty_counts.Hard : '-'}</span>
+          </div>
         </div>
 
+        <div className="widget-card kpi-card">
+          <div className="kpi-header">
+            <div className="kpi-icon" style={{ background: 'rgba(245, 158, 11, 0.1)' }}>🔥</div>
+            <div className="kpi-info">
+              <div className="kpi-label">Current Streak</div>
+              <div className="kpi-value">
+                {progressData ? progressData.stats.current_streak : '...'} <span className="kpi-unit">days</span>
+              </div>
+            </div>
+          </div>
+          <div className="kpi-trend" style={{ color: 'var(--accent-orange)' }}>
+            You're in the top 1% of active learners!
+          </div>
+        </div>
+
+        <div className="widget-card kpi-card">
+          <div className="kpi-header">
+            <div className="kpi-icon" style={{ background: 'rgba(139, 92, 246, 0.1)' }}>🧠</div>
+            <div className="kpi-info">
+              <div className="kpi-label">Memory Retention</div>
+              <div className="kpi-value">
+                {progressData ? progressData.stats.memory_retention_percent : '...'}% <span className="kpi-unit"></span>
+              </div>
+            </div>
+          </div>
+          <div className="kpi-trend" style={{ color: 'var(--accent-green)' }}>
+            ↑ 2% vs last month
+          </div>
+        </div>
+      </section>
+
+      {/* ── 3. Lower Grid (Activity Graph) ── */}
+      <section className="dashboard-lower-grid" style={{ marginTop: '2rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <ActivityGraph activityData={progressData?.activity_graph} totalSolved={progressData?.stats.total_solved} />
+        </div>
       </section>
 
       {showCheckInModal && (

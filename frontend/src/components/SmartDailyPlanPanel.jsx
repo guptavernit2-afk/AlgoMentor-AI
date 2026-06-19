@@ -166,7 +166,7 @@ export default function SmartDailyPlanPanel({ onProblemSelect, onPlanLoaded, ref
                           {task.problem ? `Solve: ${task.problem.title}` : task.title}
                         </div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                          {task.problem ? `${task.problem.difficulty} • ${task.problem.topic}` : task.topic}
+                          {task.problem ? `${task.problem.difficulty} • ${(task.problem.tags || []).join(', ')}` : task.topic}
                         </div>
                       </div>
                       {task.problem && (
