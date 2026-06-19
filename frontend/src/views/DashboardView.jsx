@@ -55,10 +55,6 @@ export default function DashboardView({ setActiveView }) {
       
       {/* ── 1. Profile / Hero Section ── */}
       <section className="dashboard-hero">
-        <div style={{ position: 'relative' }}>
-          <img src="https://i.pravatar.cc/150?u=vernit" alt="Profile" className="hero-avatar" />
-          <div className="hero-status-dot"></div>
-        </div>
         <div style={{ flex: 1 }}>
           <h1 className="hero-title">Welcome back, Vernit! 👋</h1>
           <p className="hero-subtitle">Keep up the momentum, you're doing great!</p>

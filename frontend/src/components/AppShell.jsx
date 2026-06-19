@@ -57,6 +57,25 @@ export default function AppShell({ children, activeView, setActiveView }) {
             </button>
           ))}
         </nav>
+        <div className="sidebar-bottom-profile" style={{
+          marginTop: 'auto',
+          padding: '1rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          borderTop: '1px solid rgba(255,255,255,0.05)',
+          cursor: 'pointer'
+        }}>
+          <div style={{ position: 'relative' }}>
+            <img src="https://i.pravatar.cc/150?u=vernit" alt="Profile" style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid var(--bg-dark)' }} />
+            <div style={{ position: 'absolute', bottom: 0, right: 0, background: 'var(--accent-green)', width: '10px', height: '10px', borderRadius: '50%', border: '2px solid var(--bg-card)' }}></div>
+          </div>
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>Vernit Gupta</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>Top 5% · Master Rank</div>
+          </div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>▼</div>
+        </div>
       </aside>
 
       {/* ── CENTER WORKSPACE ── */}
@@ -120,11 +139,6 @@ export default function AppShell({ children, activeView, setActiveView }) {
               )}
             </div>
 
-            <button className="user-profile-btn">
-              <div className="app-avatar">DU</div>
-              <span className="user-name">Demo User</span>
-              <span className="user-dropdown-icon">▼</span>
-            </button>
           </div>
         </header>
 
