@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import SmartDailyPlanPanel from '../components/SmartDailyPlanPanel';
-import { submitTopicReview, DEMO_USER_ID } from '../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { BarChart, Bar, ResponsiveContainer, Cell } from 'recharts';
+import { getDailyPlan, DEMO_USER_ID } from '../services/api';
+import './RevisionView.css';
 
 function todayISO() {
   const d = new Date();
@@ -10,184 +11,281 @@ function todayISO() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-const topics = [
-  { name: "Arrays", status: "Revision Due", mastery: 74, daysAgo: 8, risk: 64, position: "node-pos-1" },
-  { name: "Hashing", status: "Active", mastery: 61, daysAgo: 1, risk: 10, position: "node-pos-2" },
-  { name: "Sliding Window", status: "Upcoming", mastery: 20, daysAgo: 0, risk: 0, position: "node-pos-3" },
-  { name: "Binary Search", status: "Fading", mastery: 48, daysAgo: 5, risk: 35, position: "node-pos-4" },
+const mockChartData = [
+  { name: 'Mon', val: 30 },
+  { name: 'Tue', val: 50 },
+  { name: 'Wed', val: 40 },
+  { name: 'Thu', val: 80 },
+  { name: 'Fri', val: 45 },
+  { name: 'Sat', val: 90 },
+  { name: 'Sun', val: 30 },
 ];
 
-export default function RevisionView() {
-  const [selectedProblem, setSelectedProblem] = useState(null);
-  const [userCode, setUserCode] = useState("");
-  const [reviewGenerated, setReviewGenerated] = useState(false);
-  const [activeTab, setActiveTab] = useState("workspace");
-  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+export default function RevisionView({ setActiveView, onNavigateWorkspace }) {
+  const [date, setDate] = useState(todayISO());
+  const [plan, setPlan] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [completedTasks, setCompletedTasks] = useState(new Set());
 
-  function handleProblemSelect(problem) {
-    setSelectedProblem(problem);
-    setUserCode(problem.code || "// Write your solution here...");
-    setReviewGenerated(false);
-    setRatingSubmitted(false);
-    setActiveTab("workspace");
-  }
-
-  const handleRating = async (quality) => {
-    if (!selectedProblem) return;
+  const fetchPlan = useCallback(async (targetDate) => {
+    setIsLoading(true);
     try {
-      await submitTopicReview(DEMO_USER_ID, selectedProblem.topic, quality, todayISO());
-      setRatingSubmitted(true);
+      const data = await getDailyPlan(DEMO_USER_ID, targetDate);
+      setPlan(data);
+      setCompletedTasks(new Set());
     } catch (err) {
-      console.error("Failed to submit rating", err);
+      console.warn("Failed to fetch plan", err);
+      setPlan(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { 
+    fetchPlan(date); 
+  }, [date, fetchPlan]);
+
+  const handleStartSolving = (task) => {
+    if (task.problem && task.problem.id) {
+      if (onNavigateWorkspace) {
+        onNavigateWorkspace(task.problem.id);
+      } else {
+        setActiveView('workspace');
+      }
+    } else {
+      toggleTaskCompletion(task.task_id);
     }
   };
 
+  const toggleTaskCompletion = (taskId) => {
+    setCompletedTasks(prev => {
+      const next = new Set(prev);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+  };
+
+  // Progress calculations
+  const totalTasks = plan?.tasks?.length || 0;
+  const completedCount = completedTasks.size;
+  const progressPercent = totalTasks === 0 ? 0 : Math.round((completedCount / totalTasks) * 100);
+  
+  // SVG Circle calculations
+  const radius = 46;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (progressPercent / 100) * circumference;
+
   return (
-    <div className="layout-view layout-view-padded">
+    <div className="study-plan-container">
       
-      {/* ── TOP & MIDDLE: Smart Daily Plan (Summary, Focus, Tasks, Recommended) ── */}
-      <section style={{ marginBottom: '2rem' }}>
-        <SmartDailyPlanPanel onProblemSelect={handleProblemSelect} />
+      {/* ── HEADER ── */}
+      <header className="study-header">
+        <div className="study-title-area">
+          <h1 className="study-title">Smart Study Plan</h1>
+          <div className="study-subtitle-row">
+            <span>Personalized. Adaptive. Effective.</span>
+            <span className="pill-sm2">SM-2 Active</span>
+          </div>
+        </div>
+        
+        <div className="study-actions">
+          <div className="date-picker">
+            <span>📅</span>
+            <input 
+              type="date" 
+              value={date} 
+              onChange={e => setDate(e.target.value)}
+              style={{ background: 'transparent', border: 'none', color: '#cbd5e1', outline: 'none', fontFamily: 'inherit' }}
+            />
+          </div>
+          <button className="btn-regenerate" onClick={() => fetchPlan(date)}>Regenerate Plan</button>
+        </div>
+      </header>
+
+      {/* ── STATS ROW ── */}
+      <section className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-icon" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>💧</div>
+          <div className="stat-info">
+            <span className="stat-label">Plan Type</span>
+            <span className="stat-value">{plan?.plan_intensity || 'Deep'}</span>
+            <span className="stat-subtext">High Focus</span>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>☑️</div>
+          <div className="stat-info">
+            <span className="stat-label">Daily Goal</span>
+            <span className="stat-value">{plan?.available_minutes || 120} mins</span>
+            <span className="stat-subtext">Daily Target</span>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>🔥</div>
+          <div className="stat-info">
+            <span className="stat-label">Plan Streak</span>
+            <span className="stat-value">12 Days</span>
+            <span className="stat-subtext">Keep it going! 🔥</span>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon" style={{ background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899' }}>🎯</div>
+          <div className="stat-info">
+            <span className="stat-label">Est. Accuracy</span>
+            <span className="stat-value">89%</span>
+            <span className="stat-subtext">By plan end</span>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon" style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>📚</div>
+          <div className="stat-info">
+            <span className="stat-label">Topics in Plan</span>
+            <span className="stat-value">{plan?.tasks?.length || 0}</span>
+            <span className="stat-subtext">Focus Areas</span>
+          </div>
+        </div>
       </section>
 
-      {/* ── BOTTOM: Practice Workspace OR Memory Graph (Tabs to save vertical space) ── */}
-      <section style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-light)', background: 'var(--bg-dark)' }}>
-          <button 
-            onClick={() => setActiveTab("workspace")}
-            style={{ flex: 1, padding: '1rem', background: activeTab === 'workspace' ? 'transparent' : 'rgba(0,0,0,0.2)', border: 'none', borderBottom: activeTab === 'workspace' ? '2px solid var(--accent-indigo)' : '2px solid transparent', color: activeTab === 'workspace' ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}
-          >
-            Practice Workspace
-          </button>
-          <button 
-            onClick={() => setActiveTab("memory")}
-            style={{ flex: 1, padding: '1rem', background: activeTab === 'memory' ? 'transparent' : 'rgba(0,0,0,0.2)', border: 'none', borderBottom: activeTab === 'memory' ? '2px solid var(--accent-indigo)' : '2px solid transparent', color: activeTab === 'memory' ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}
-          >
-            Topic Memory Graph
-          </button>
-        </div>
+      {/* ── MAIN CONTENT GRID ── */}
+      <section className="study-main-grid">
+        
+        {/* LEFT COLUMN: Today's Plan */}
+        <div className="plan-panel">
+          <div className="panel-header">
+            <h2 className="panel-title">Today's Plan</h2>
+            <span className="task-count-pill">{totalTasks} Tasks</span>
+          </div>
 
-        <div style={{ padding: '1.5rem' }}>
-          {activeTab === 'workspace' ? (
-            selectedProblem ? (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h3 style={{ margin: 0, fontSize: '1rem' }}>{selectedProblem.title}</h3>
-                    <span style={{ fontSize: '0.75rem', background: 'var(--bg-dark)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>JavaScript</span>
-                  </div>
-                  <textarea
-                    value={userCode}
-                    onChange={(e) => { setUserCode(e.target.value); setReviewGenerated(false); }}
-                    spellCheck="false"
-                    style={{ flex: 1, minHeight: '220px', background: 'var(--bg-dark)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-sm)', color: '#a5b4fc', fontFamily: 'monospace', padding: '1rem', fontSize: '0.85rem', resize: 'vertical' }}
-                  />
-                  <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                    <button onClick={() => setReviewGenerated(true)} style={{ background: 'var(--accent-indigo)', color: 'white', border: 'none', padding: '0.6rem 1rem', borderRadius: 'var(--radius-sm)', fontWeight: 600, cursor: 'pointer' }}>▶ Run AI Review</button>
-                    <button onClick={() => { setUserCode(selectedProblem.code || ""); setReviewGenerated(false); }} style={{ background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-strong)', padding: '0.6rem 1rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}>Reset</button>
-                  </div>
-                </div>
-
-                <div>
-                  {!reviewGenerated ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)', border: '1px dashed var(--border-strong)' }}>
-                      <span style={{ fontSize: '2rem', marginBottom: '1rem' }}>⬡</span>
-                      <p>Awaiting Code Review</p>
-                    </div>
-                  ) : (
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--accent-green)' }}>Diagnostic Complete</h3>
-                        <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--accent-green)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>Strong</span>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Pattern detected</span>
-                          <strong style={{ fontSize: '0.85rem' }}>Hash Map Lookup</strong>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Time complexity</span>
-                          <strong style={{ fontSize: '0.85rem', color: 'var(--accent-blue)' }}>O(n)</strong>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Space complexity</span>
-                          <strong style={{ fontSize: '0.85rem', color: 'var(--accent-purple)' }}>O(n)</strong>
-                        </div>
-                      </div>
-                      <div style={{ background: 'rgba(99, 102, 241, 0.1)', padding: '1rem', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--accent-indigo)' }}>
-                        <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent-indigo)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>AI Note</span>
-                        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-primary)' }}>Your logic is optimized. Next, try a variation where the array contains repeated numbers.</p>
-                      </div>
-
-                      {/* SM-2 Feedback Section */}
-                      <div style={{ marginTop: '1.5rem', background: 'var(--bg-base)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-md)', padding: '1.25rem', textAlign: 'center' }}>
-                        {!ratingSubmitted ? (
-                          <>
-                            <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', color: 'var(--text-primary)' }}>How well did you recall this topic?</h4>
-                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                              {[0, 1, 2, 3, 4, 5].map(q => (
-                                <button
-                                  key={q}
-                                  onClick={() => handleRating(q)}
-                                  title={`Quality: ${q}`}
-                                  style={{
-                                    width: '32px', height: '32px', borderRadius: '50%',
-                                    background: 'var(--bg-dark)', border: '1px solid var(--border-strong)',
-                                    color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600,
-                                    transition: 'all 0.2s'
-                                  }}
-                                  onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--accent-indigo)'; e.currentTarget.style.color = 'var(--accent-indigo)'; }}
-                                  onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
-                                >
-                                  {q}
-                                </button>
-                              ))}
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                              <span>0 = Blackout</span>
-                              <span>5 = Perfect Recall</span>
-                            </div>
-                          </>
-                        ) : (
-                          <div style={{ color: 'var(--accent-green)', fontWeight: 500, fontSize: '0.95rem' }}>
-                            <span style={{ marginRight: '0.5rem' }}>✔</span>
-                            Memory graph updated!
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                <span style={{ fontSize: '2rem', display: 'block', marginBottom: '1rem' }}>🎯</span>
-                Select a problem from the Recommended Queue to begin practice.
-              </div>
-            )
+          {isLoading ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: '#6366f1' }}>Loading plan...</div>
           ) : (
-            <div className="memory-map" style={{ position: 'relative', height: '300px', background: 'var(--bg-dark)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-strong)', overflow: 'hidden' }}>
-              <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
-                <line x1="18%" y1="27%" x2="54%" y2="16%" stroke="var(--border-strong)" strokeWidth="2" />
-                <line x1="54%" y1="16%" x2="78%" y2="42%" stroke="var(--border-strong)" strokeWidth="2" />
-                <line x1="18%" y1="27%" x2="36%" y2="72%" stroke="var(--accent-red)" strokeWidth="2" />
-              </svg>
-              {topics.map(topic => {
-                const pos = { cx: "50%", cy: "50%" };
-                if(topic.position === "node-pos-1") { pos.cx = "18%"; pos.cy = "27%"; }
-                if(topic.position === "node-pos-2") { pos.cx = "54%"; pos.cy = "16%"; }
-                if(topic.position === "node-pos-3") { pos.cx = "78%"; pos.cy = "42%"; }
-                if(topic.position === "node-pos-4") { pos.cx = "36%"; pos.cy = "72%"; }
+            <div className="timeline">
+              {plan && plan.tasks.map((task) => {
+                const isCompleted = completedTasks.has(task.task_id);
+                const isReview = task.task_type === 'Review' || task.task_type === 'Revision';
+                
                 return (
-                  <div key={topic.name} style={{ position: 'absolute', left: pos.cx, top: pos.cy, transform: 'translate(-50%, -50%)', background: 'var(--bg-card)', border: `2px solid ${topic.risk > 50 ? 'var(--accent-red)' : 'var(--border-strong)'}`, padding: '0.5rem', borderRadius: '8px', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 600 }}>{topic.name}</div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{topic.mastery}%</div>
+                  <div key={task.task_id} className={`timeline-item ${isCompleted ? 'completed' : ''}`}>
+                    <div className="timeline-time">{task.duration_minutes}m</div>
+                    <div className="timeline-dot"></div>
+                    
+                    <div className="task-content">
+                      <div className="task-title">{task.title}</div>
+                      <div className="task-meta">
+                        {task.problem?.difficulty && (
+                          <span className={`task-difficulty diff-${task.problem.difficulty.toLowerCase()}`}>
+                            {task.problem.difficulty}
+                          </span>
+                        )}
+                        <span>•</span>
+                        <span>{task.topic}</span>
+                      </div>
+                    </div>
+                    
+                    <button 
+                      className="task-action-btn"
+                      onClick={() => handleStartSolving(task)}
+                    >
+                      {isCompleted ? 'Completed' : (isReview ? 'Review >' : 'Solve >')}
+                    </button>
                   </div>
                 );
               })}
             </div>
           )}
+
+          <div className="timeline-actions">
+            <button className="btn-start-next">Start Next Task</button>
+            <button className="btn-open-leetcode" onClick={() => window.open("https://leetcode.com/problemset/all/", "_blank")}>Open in LeetCode</button>
+          </div>
         </div>
+
+        {/* RIGHT COLUMN: Progress & Insights */}
+        <div className="right-column">
+          
+          <div className="progress-panel">
+            <div className="progress-panel-header">
+              <h2 className="panel-title" style={{margin: 0}}>Plan Progress</h2>
+              <span style={{color: '#6366f1', fontSize: '0.85rem', cursor: 'pointer'}}>View Details &gt;</span>
+            </div>
+            
+            <div className="progress-details">
+              <div className="progress-ring-container" style={{ width: 120, height: 120 }}>
+                <svg className="progress-ring" width="120" height="120">
+                  <circle className="progress-ring-circle-bg" cx="60" cy="60" r={radius} />
+                  <circle 
+                    className="progress-ring-circle" 
+                    cx="60" 
+                    cy="60" 
+                    r={radius} 
+                    strokeDasharray={circumference}
+                    style={{ strokeDashoffset }}
+                  />
+                </svg>
+                <div className="progress-ring-text">
+                  <span className="progress-ring-percent" style={{ fontSize: '1.5rem' }}>{progressPercent}%</span>
+                  <span className="progress-ring-label">Overall Progress</span>
+                </div>
+              </div>
+              
+              <div style={{ flex: 1, height: '100px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={mockChartData}>
+                    <Bar dataKey="val" radius={[4, 4, 0, 0]}>
+                      {mockChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={index === 2 ? '#6366f1' : '#334155'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.65rem', color: '#64748b' }}>
+                  <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="weak-areas-panel">
+            <h2 className="panel-title" style={{marginBottom: '1.5rem'}}>Weak Areas to Improve</h2>
+            
+            <div className="weak-area-item">
+              <div className="weak-area-header">
+                <div className="weak-area-label">
+                  <div className="weak-area-icon">🧠</div>
+                  <span>Dynamic Programming</span>
+                </div>
+                <span className="weak-area-value">45%</span>
+              </div>
+              <div className="weak-area-bar-bg">
+                <div className="weak-area-bar-fill" style={{width: '45%'}}></div>
+              </div>
+            </div>
+
+            <div className="weak-area-item">
+              <div className="weak-area-header">
+                <div className="weak-area-label">
+                  <div className="weak-area-icon" style={{background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444'}}>🕸️</div>
+                  <span>Graphs</span>
+                </div>
+                <span className="weak-area-value">35%</span>
+              </div>
+              <div className="weak-area-bar-bg">
+                <div className="weak-area-bar-fill" style={{width: '35%'}}></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="top-tip-panel">
+            <h3 className="top-tip-title">Top Tip</h3>
+            <p className="top-tip-text">Solve 2-3 more DP problems to boost your accuracy and master overlapping subproblems before the end of this week.</p>
+          </div>
+
+        </div>
+
       </section>
 
     </div>
