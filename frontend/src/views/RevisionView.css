@@ -451,3 +451,49 @@
   margin: 0;
   line-height: 1.4;
 }
+
+/* Progress Ring */
+.progress-ring-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-ring {
+  transform: rotate(-90deg);
+}
+
+.progress-ring-circle-bg {
+  fill: transparent;
+  stroke: #1e293b;
+  stroke-width: 10;
+}
+
+.progress-ring-circle {
+  fill: transparent;
+  stroke: #6366f1;
+  stroke-width: 10;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.5s ease-in-out;
+}
+
+.progress-ring-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.progress-ring-percent {
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.progress-ring-label {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
