@@ -19,7 +19,7 @@ from app.models import Goal, Situation, Workload
 
 PROBLEM_BANK: list[dict] = [
     {
-        "id": 1,
+        "id": "two-sum-1",
         "title": "Two Sum",
         "difficulty": "Easy",
         "tags": ["Array", "Hashing"],
@@ -30,8 +30,8 @@ PROBLEM_BANK: list[dict] = [
         "leetcode_link": "https://leetcode.com/problems/two-sum/",
     },
     {
-        "id": 2,
-        "title": "Contains Duplicate",
+        "id": "valid-palindrome-2",
+        "title": "Valid Palindrome",
         "difficulty": "Easy",
         "tags": ["Array", "Set"],
         "reason": (
@@ -41,7 +41,7 @@ PROBLEM_BANK: list[dict] = [
         "leetcode_link": "https://leetcode.com/problems/contains-duplicate/",
     },
     {
-        "id": 3,
+        "id": "subarray-sum-3",
         "title": "Subarray Sum Equals K",
         "difficulty": "Medium",
         "tags": ["Prefix Sum", "Hashing"],

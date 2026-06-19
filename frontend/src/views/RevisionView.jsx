@@ -174,7 +174,9 @@ export default function RevisionView({ setActiveView, onNavigateWorkspace }) {
                     <div className="timeline-dot"></div>
                     
                     <div className="task-content">
-                      <div className="task-title">{task.title}</div>
+                      <div className="task-title">
+                        {task.problem ? `${task.topic}: ${task.problem.title}` : task.title}
+                      </div>
                       <div className="task-meta">
                         {task.problem?.difficulty && (
                           <span className={`task-difficulty diff-${task.problem.difficulty.toLowerCase()}`}>
@@ -182,7 +184,11 @@ export default function RevisionView({ setActiveView, onNavigateWorkspace }) {
                           </span>
                         )}
                         <span>•</span>
-                        <span>{task.topic}</span>
+                        {task.problem?.tags ? (
+                          <span>{task.problem.tags.join(', ')}</span>
+                        ) : (
+                          <span>{task.topic}</span>
+                        )}
                       </div>
                     </div>
                     

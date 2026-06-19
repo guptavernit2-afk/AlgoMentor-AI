@@ -422,7 +422,7 @@ class RecommendationRequest(BaseModel):
 
 
 class ProblemRecommendation(BaseModel):
-    id: int
+    id: str
     title: str
     difficulty: str
     tags: list[str]
