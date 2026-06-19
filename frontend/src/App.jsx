@@ -66,7 +66,7 @@ function App() {
     <AppShell activeView={activeView} setActiveView={setActiveView}>
       {activeView === 'dashboard' && <DashboardView setActiveView={setActiveView} onNavigateWorkspace={handleNavigateWorkspace} />}
       {activeView === 'schedule' && <ScheduleView />}
-      {activeView === 'revision' && <RevisionView />}
+      {activeView === 'revision' && <RevisionView setActiveView={setActiveView} onNavigateWorkspace={handleNavigateWorkspace} />}
       {activeView === 'settings' && <SettingsView />}
     </AppShell>
   );
