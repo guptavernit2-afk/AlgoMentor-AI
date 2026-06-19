@@ -3,6 +3,7 @@ import React from 'react';
 export default function TopicMasteryWidget({ topics }) {
   if (!topics) return null;
 
+  return (
     <div className="topic-mastery-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1rem' }}>
       {topics.map((t, i) => {
         const color = getGradientColor(t.percentage);
