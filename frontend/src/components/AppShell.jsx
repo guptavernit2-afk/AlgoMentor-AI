@@ -30,7 +30,9 @@ export default function AppShell({ children, activeView, setActiveView }) {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
     { id: 'revision', label: 'Study Plan', icon: '📅' },
-    { id: 'analytics', label: 'Analytics', icon: '📊' },
+    { id: 'problems', label: 'Problems', icon: '🧩' },
+    { id: 'analytics', label: 'Analytics', icon: '📈' },
+    { id: 'achievements', label: 'Achievements', icon: '🏆' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
   ];
 

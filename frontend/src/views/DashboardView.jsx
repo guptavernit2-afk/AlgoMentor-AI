@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import CheckInModal from '../components/CheckInModal';
 import ActivityGraph from '../components/ActivityGraph';
+import AccuracyChart from '../components/AccuracyChart';
+import WeeklyHoursChart from '../components/WeeklyHoursChart';
+import TopicMasteryWidget from '../components/TopicMasteryWidget';
+import StudyCalendarWidget from '../components/StudyCalendarWidget';
+import FocusAreasWidget from '../components/FocusAreasWidget';
+import AchievementsWidget from '../components/AchievementsWidget';
 import { getDailyPlan, getUserProgress, DEMO_USER_ID } from '../services/api';
 import './DashboardView.css';
 
@@ -45,56 +51,47 @@ export default function DashboardView({ setActiveView }) {
   const handleCheckInSkip = () => setShowCheckInModal(false);
 
   return (
-    <div className="layout-view layout-view-padded">
+    <div className="layout-view layout-view-padded dashboard-container">
       
       {/* ── 1. Profile / Hero Section ── */}
-      <section className="dashboard-hero" style={{ padding: '2rem', display: 'flex', gap: '2rem', alignItems: 'center', background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)' }}>
+      <section className="dashboard-hero">
         <div style={{ position: 'relative' }}>
-          <img src="https://i.pravatar.cc/150?u=vernit" alt="Profile" style={{ width: '100px', height: '100px', borderRadius: '50%', border: '4px solid var(--bg-dark)' }} />
-          <div style={{ position: 'absolute', bottom: 0, right: 0, background: 'var(--accent-green)', width: '20px', height: '20px', borderRadius: '50%', border: '3px solid var(--bg-card)' }}></div>
+          <img src="https://i.pravatar.cc/150?u=vernit" alt="Profile" className="hero-avatar" />
+          <div className="hero-status-dot"></div>
         </div>
         <div style={{ flex: 1 }}>
-          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '1.75rem', color: 'var(--text-primary)' }}>Vernit Gupta</h1>
-          <p style={{ margin: '0 0 1.25rem 0', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>Top 5% · 124 Day Streak · Master Rank</p>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <button 
-              onClick={() => setActiveView('revision')}
-              className="btn-primary"
-              style={{ background: 'var(--accent-indigo)', color: 'white', border: 'none', padding: '0.6rem 1.2rem', borderRadius: 'var(--radius-md)', fontWeight: 600, cursor: 'pointer' }}
-            >
-              View Today's Study Plan →
-            </button>
-            <button 
-              style={{ background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-strong)', padding: '0.6rem 1.2rem', borderRadius: 'var(--radius-md)', fontWeight: 500, cursor: 'pointer' }}
-            >
-              Edit Profile
-            </button>
-          </div>
+          <h1 className="hero-title">Welcome back, Vernit! 👋</h1>
+          <p className="hero-subtitle">Keep up the momentum, you're doing great!</p>
         </div>
       </section>
 
-      {/* ── 2. Progress Report (KPI Cards) ── */}
-      <section className="dashboard-kpi-grid" style={{ marginTop: '2rem' }}>
+      {/* ── 2. Top KPIs (5 cards) ── */}
+      <section className="dashboard-kpi-grid">
         <div className="widget-card kpi-card">
           <div className="kpi-header">
-            <div className="kpi-icon" style={{ background: 'rgba(59, 130, 246, 0.1)' }}>🎯</div>
+            <div className="kpi-icon" style={{ background: 'rgba(236, 72, 153, 0.1)' }}>🎯</div>
             <div className="kpi-info">
-              <div className="kpi-label">Total Solved</div>
+              <div className="kpi-label">Problems Solved</div>
               <div className="kpi-value">
                 {progressData ? progressData.stats.total_solved : '...'} <span className="kpi-unit">/ 1000</span>
               </div>
             </div>
           </div>
-          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', fontSize: '0.75rem' }}>
-            <span style={{ color: 'var(--accent-green)' }}>Easy: {progressData ? progressData.stats.difficulty_counts.Easy : '-'}</span> • 
-            <span style={{ color: 'var(--accent-yellow)' }}>Med: {progressData ? progressData.stats.difficulty_counts.Medium : '-'}</span> • 
-            <span style={{ color: 'var(--accent-red)' }}>Hard: {progressData ? progressData.stats.difficulty_counts.Hard : '-'}</span>
+          <div className="kpi-progress-bar-container">
+            <div className="kpi-progress-bar-segment" style={{ width: '50%', background: 'var(--accent-green)' }} />
+            <div className="kpi-progress-bar-segment" style={{ width: '40%', background: 'var(--accent-indigo)' }} />
+            <div className="kpi-progress-bar-segment" style={{ width: '10%', background: 'var(--accent-red)' }} />
+          </div>
+          <div className="kpi-difficulty-text">
+            <span style={{ color: 'var(--accent-green)' }}>Easy {progressData?.stats.difficulty_counts.Easy}</span> • 
+            <span style={{ color: 'var(--accent-indigo)' }}>Med {progressData?.stats.difficulty_counts.Medium}</span> • 
+            <span style={{ color: 'var(--accent-red)' }}>Hard {progressData?.stats.difficulty_counts.Hard}</span>
           </div>
         </div>
 
         <div className="widget-card kpi-card">
           <div className="kpi-header">
-            <div className="kpi-icon" style={{ background: 'rgba(245, 158, 11, 0.1)' }}>🔥</div>
+            <div className="kpi-icon" style={{ background: 'rgba(249, 115, 22, 0.1)' }}>🔥</div>
             <div className="kpi-info">
               <div className="kpi-label">Current Streak</div>
               <div className="kpi-value">
@@ -103,40 +100,158 @@ export default function DashboardView({ setActiveView }) {
             </div>
           </div>
           <div className="kpi-trend" style={{ color: 'var(--accent-orange)' }}>
-            You're in the top 1% of active learners!
+            Keep it going! 🔥
           </div>
         </div>
 
         <div className="widget-card kpi-card">
           <div className="kpi-header">
-            <div className="kpi-icon" style={{ background: 'rgba(139, 92, 246, 0.1)' }}>🧠</div>
+            <div className="kpi-icon" style={{ background: 'rgba(59, 130, 246, 0.1)' }}>🎯</div>
             <div className="kpi-info">
-              <div className="kpi-label">Memory Retention</div>
+              <div className="kpi-label">Accuracy</div>
               <div className="kpi-value">
-                {progressData ? progressData.stats.memory_retention_percent : '...'}% <span className="kpi-unit"></span>
+                {progressData ? progressData.stats.memory_retention_percent : '...'}%
               </div>
             </div>
           </div>
           <div className="kpi-trend" style={{ color: 'var(--accent-green)' }}>
-            ↑ 2% vs last month
+            ↑ 12% vs last month
+          </div>
+        </div>
+
+        <div className="widget-card kpi-card">
+          <div className="kpi-header">
+            <div className="kpi-icon" style={{ background: 'rgba(234, 179, 8, 0.1)' }}>⏱️</div>
+            <div className="kpi-info">
+              <div className="kpi-label">Study Time</div>
+              <div className="kpi-value">
+                {progressData ? progressData.stats.study_time_hours : '...'}h
+              </div>
+            </div>
+          </div>
+          <div className="kpi-trend" style={{ color: 'var(--accent-green)' }}>
+            ↑ 12h vs last month
+          </div>
+        </div>
+
+        <div className="widget-card kpi-card" style={{ background: 'linear-gradient(135deg, rgba(30,27,75,0.8), rgba(88,28,135,0.2))' }}>
+          <div className="kpi-header">
+            <div className="kpi-icon" style={{ background: 'rgba(234, 179, 8, 0.2)' }}>🏆</div>
+            <div className="kpi-info">
+              <div className="kpi-label">Rank</div>
+              <div className="kpi-value" style={{ fontSize: '1.5rem' }}>
+                {progressData ? progressData.stats.rank.split('-')[0].trim() : '...'}
+              </div>
+            </div>
+          </div>
+          <div className="kpi-trend" style={{ color: 'var(--accent-purple)' }}>
+            {progressData ? progressData.stats.rank.split('-')[1].trim() : '...'} ✪
           </div>
         </div>
       </section>
 
-      {/* ── 3. Lower Grid (Activity Graph) ── */}
-      <section className="dashboard-lower-grid" style={{ marginTop: '2rem' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {/* ── 3. Main Data Grid ── */}
+      <section className="dashboard-main-grid">
+        
+        {/* Row 2: Activity (Span 2) | Accuracy Trend (Span 1) | Study Calendar (Span 1) */}
+        <div className="widget-card col-span-2">
+          <div className="widget-header">
+            <h3 className="widget-title">Activity Overview</h3>
+          </div>
           <ActivityGraph activityData={progressData?.activity_graph} totalSolved={progressData?.stats.total_solved} />
         </div>
+        
+        <div className="widget-card">
+          <div className="widget-header">
+            <h3 className="widget-title">Accuracy Trend <span style={{fontSize:'0.75rem', color:'var(--text-muted)', fontWeight:'normal'}}>(30 Days)</span></h3>
+          </div>
+          <AccuracyChart data={progressData?.accuracy_trend} />
+        </div>
+
+        <div className="widget-card">
+          <div className="widget-header">
+            <h3 className="widget-title">Study Calendar</h3>
+          </div>
+          <StudyCalendarWidget />
+        </div>
+
+        {/* Row 3: Topic Mastery (Span 2) | Focus Areas (Span 1) | Weekly Hours (Span 1) */}
+        <div className="widget-card col-span-2">
+          <div className="widget-header">
+            <h3 className="widget-title">Topic Mastery</h3>
+          </div>
+          <TopicMasteryWidget topics={progressData?.topic_mastery} />
+        </div>
+
+        <div className="widget-card">
+          <div className="widget-header">
+            <h3 className="widget-title">Focus Areas</h3>
+            <span className="widget-action">View All</span>
+          </div>
+          <FocusAreasWidget areas={progressData?.focus_areas} />
+        </div>
+
+        <div className="widget-card">
+          <div className="widget-header">
+            <h3 className="widget-title">Weekly Study Hours</h3>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
+            <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>28.4h</span>
+            <span style={{ color: 'var(--accent-green)', fontSize: '0.75rem', marginBottom: '0.2rem' }}>↑ 6.2h vs last week</span>
+          </div>
+          <WeeklyHoursChart data={progressData?.study_hours} />
+        </div>
+
+        {/* Row 4: Recent Problems (Span 2) | Achievements (Span 2) */}
+        <div className="widget-card col-span-2">
+          <div className="widget-header">
+            <h3 className="widget-title">Recent Problems Solved</h3>
+            <span className="widget-action">View All</span>
+          </div>
+          
+          {/* Simple table for recent problems */}
+          <table style={{ width: '100%', marginTop: '1rem', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+            <tbody>
+              {['Trapping Rain Water', 'Kth Largest Element in Array', 'Valid Anagram'].map((title, i) => (
+                <tr key={i} style={{ borderBottom: i < 2 ? '1px solid var(--border-light)' : 'none' }}>
+                  <td style={{ padding: '0.75rem 0', color: 'var(--accent-green)' }}>✔</td>
+                  <td style={{ padding: '0.75rem 0', color: 'var(--text-primary)' }}>{title}</td>
+                  <td style={{ padding: '0.75rem 0' }}>
+                    <span style={{ 
+                      fontSize: '0.7rem', 
+                      padding: '0.1rem 0.4rem', 
+                      borderRadius: '4px', 
+                      backgroundColor: i === 0 ? 'rgba(239,68,68,0.1)' : i === 1 ? 'rgba(245,158,11,0.1)' : 'rgba(34,197,94,0.1)',
+                      color: i === 0 ? 'var(--accent-red)' : i === 1 ? 'var(--accent-yellow)' : 'var(--accent-green)'
+                    }}>
+                      {i === 0 ? 'Hard' : i === 1 ? 'Medium' : 'Easy'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '0.75rem 0', color: 'var(--accent-purple)', fontSize: '0.75rem' }}>{i === 0 ? 'Two Pointers' : i === 1 ? 'Heap' : 'Hash Table'}</td>
+                  <td style={{ padding: '0.75rem 0', color: 'var(--text-muted)', textAlign: 'right' }}>{i === 0 ? '24 min ago' : i === 1 ? '1 hr ago' : '2 hr ago'}</td>
+                  <td style={{ padding: '0.75rem 0', color: 'var(--text-primary)', fontWeight: 'bold', textAlign: 'right' }}>{i === 0 ? '92%' : i === 1 ? '88%' : '100%'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="widget-card col-span-2">
+          <div className="widget-header">
+            <h3 className="widget-title">Achievements</h3>
+            <span className="widget-action">View All</span>
+          </div>
+          <AchievementsWidget />
+        </div>
+
       </section>
 
       {showCheckInModal && (
         <CheckInModal 
-          onClose={handleCheckInSkip} 
           onComplete={handleCheckInComplete} 
+          onSkip={handleCheckInSkip}
         />
       )}
-
     </div>
   );
 }

@@ -110,12 +110,34 @@ class ProgressStats(BaseModel):
     difficulty_counts: DifficultyCounts
     current_streak: int
     memory_retention_percent: int
+    study_time_hours: int
+    rank: str
+
+class AccuracyDataPoint(BaseModel):
+    date: str
+    accuracy: int
+
+class StudyHoursDataPoint(BaseModel):
+    day: str
+    hours: float
+
+class TopicMastery(BaseModel):
+    topic: str
+    percentage: int
+
+class FocusArea(BaseModel):
+    topic: str
+    reason: str
 
 class ProgressResponse(BaseModel):
     user_id: str
     stats: ProgressStats
     # Maps "YYYY-MM-DD" to number of problems solved on that day
     activity_graph: dict[str, int]
+    accuracy_trend: list[AccuracyDataPoint]
+    study_hours: list[StudyHoursDataPoint]
+    topic_mastery: list[TopicMastery]
+    focus_areas: list[FocusArea]
 
 
 # ============================================================

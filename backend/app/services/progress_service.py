@@ -9,7 +9,15 @@ import random
 from datetime import date as Date
 from datetime import timedelta
 
-from app.models import DifficultyCounts, ProgressResponse, ProgressStats
+from app.models import (
+    AccuracyDataPoint,
+    DifficultyCounts,
+    FocusArea,
+    ProgressResponse,
+    ProgressStats,
+    StudyHoursDataPoint,
+    TopicMastery,
+)
 
 
 def _deterministic_seed(user_id: str) -> int:
@@ -82,11 +90,63 @@ def get_user_progress(user_id: str) -> ProgressResponse:
             Hard=hard_count
         ),
         current_streak=streak,
-        memory_retention_percent=92  # Mock solid retention
+        memory_retention_percent=89,
+        study_time_hours=142,
+        rank="Top 5% - Master Rank"
     )
+
+    # 1. Generate Accuracy Trend (30 days)
+    accuracy_trend = []
+    base_accuracy = 75
+    for i in range(29, -1, -1):
+        d = today - timedelta(days=i)
+        # Random walk up to 90s
+        base_accuracy += random.randint(-2, 3)
+        base_accuracy = max(50, min(100, base_accuracy))
+        accuracy_trend.append(AccuracyDataPoint(
+            date=d.strftime("%b %d"),
+            accuracy=base_accuracy
+        ))
+    
+    # Force the latest to match the KPI stat (89%)
+    accuracy_trend[-1].accuracy = 89
+
+    # 2. Generate Weekly Study Hours
+    days_of_week = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    # Reorder so today is at the end, or just map standard Mon-Sun
+    study_hours = [
+        StudyHoursDataPoint(day="Mon", hours=3.5),
+        StudyHoursDataPoint(day="Tue", hours=5.2),
+        StudyHoursDataPoint(day="Wed", hours=2.1),
+        StudyHoursDataPoint(day="Thu", hours=4.8),
+        StudyHoursDataPoint(day="Fri", hours=6.1),
+        StudyHoursDataPoint(day="Sat", hours=8.4),
+        StudyHoursDataPoint(day="Sun", hours=5.5),
+    ]
+
+    # 3. Topic Mastery
+    topic_mastery = [
+        TopicMastery(topic="Arrays", percentage=95),
+        TopicMastery(topic="Two Pointers", percentage=82),
+        TopicMastery(topic="Sliding Window", percentage=60),
+        TopicMastery(topic="Binary Search", percentage=45),
+        TopicMastery(topic="Dynamic Programming", percentage=30),
+        TopicMastery(topic="Graphs", percentage=15),
+    ]
+
+    # 4. Focus Areas
+    focus_areas = [
+        FocusArea(topic="Binary Search", reason="Needs more practice"),
+        FocusArea(topic="Dynamic Programming", reason="Keep practicing"),
+        FocusArea(topic="Graphs", reason="Start your journey"),
+    ]
 
     return ProgressResponse(
         user_id=user_id,
         stats=stats,
-        activity_graph=activity_graph
+        activity_graph=activity_graph,
+        accuracy_trend=accuracy_trend,
+        study_hours=study_hours,
+        topic_mastery=topic_mastery,
+        focus_areas=focus_areas
     )
